@@ -1,0 +1,78 @@
+What language is most closely associated with the Linux operating system?
+
+Create Java classes to represent a user and a post.
+
+Use PHP to convert a given number to binary.
+
+Amsterdam's main attractions include its historic canals; the Rijksmuseum, the state museum with a vast collection of Dutch Golden Age art; the Van Gogh Museum; the Dam Square, where the Royal Palace of Amsterdam and former city hall (stadhuis) are located; the Amsterdam Museum; Stedelijk Museum, with modern art; Hermitage Amsterdam, the Concertgebouw concert hall; the Anne Frank House; the Het Scheepvaartmuseum, the Heineken Experience, the Natura Artis Magistra; Hortus Botanicus, NEMO, the red-light district and many cannabis coffee shops. The city is also well known for its nightlife and festival activity; with several of its nightclubs (Melkweg, Paradiso) among the world's most famous. Primarily known for its artistic heritage, elaborate canal system and narrow canal houses with gabled façades; well-preserved legacies of the city's 17th-century Golden Age, and the establishment of the Van Gogh Museum, displaying the work of the famous Dutch modern artist, have attracted millions of visitors to Amsterdam annually.
+
+Find all of the Amsterdam museums mentioned in the text and put them in a numbered list.
+
+Generate the necessary SQL query to delete records from the table 'students' where the student's major is 'Computer Science'.
+
+Generate a valid C++ code to print the next 10 prime numbers
+
+What should be the best personality in a man
+
+Construct an algorithm to predict the next 3 days' stock market movements given the stock prices from the past 5 days.
+
+[69.04, 67.07, 68.3, 68.91, 70.09]
+
+Choose a suitable data structure for finding the minimum and maximum element from a collection of numbers.
+
+The Association of Baptist Churches in Ireland (ABC, ABCi and ABCI) is a Baptist Christian denomination based in Ireland. It is a group of 117 autonomous Baptist churches working together in fellowship and evangelism, training and caring ministries. The association only acts on behalf of the churches for the work which the churches have agreed to do together.
+
+Based on this paragraph, how many churches are in the The Association of Baptist Churches in Ireland?
+
+Rewrite the code below to remove the repetition in the code using a loop.
+
+names = ["John", "Sam", "Paul"]
+
+print(names[0])
+print(names[1])
+print(names[2])
+
+Write a SQL query to output the names of people who have visited the website more than 5 times in the last week.
+
+If  you found yourself  washed  up on  a  deserted tropical island with no hope for immediate rescue, what  would  you do?
+
+What is JavaScript?
+
+Write a MySQL query to select all the rows from the table 'employees' where the employee name starts with the letter 'A'.
+
+Give me some ideas for party games at a child's birthday.
+
+Create a function that takes two parameters, an array and an element, and checks if the element exists in the array.
+
+let arr = [1, 2, 3, 4, 5];
+let element = 7;
+
+Give me a list of actors who won an Oscar in the last 5 years and tell me for which movie they won it.
+
+Burg Lockenhaus (Hungarian Léka) is a castle and medieval fortress in the Güns Valley in the southeastern part of Lockenhaus, in Burgenland, eastern Austria. Burg Lockenhaus is 368 metres (1,207 ft) above sea level. The castle was built in Romanesque and Gothic architectural styles around 1200, and was initially called "Leuca" or Léka. It is part of the Naturpark Geschriebenstein.
+
+Geography
+The castle is in the Güns Valley, set amidst a hilly terrain in eastern Austria, near the Hungarian border towards Kőszeg. It is in the southeastern part of the town of Lockenhaus, roughly 120 kilometres (75 mi) south of Vienna and roughly the same distance by road northeast of Graz.[citation needed] It was built on the spur of a hill, which is now called the Castle Hill. It can be reached by express bus service along the Eisenstadter Bundestrasse. A lake lies immediately to the east of the castle.
+
+Where is the Burg Lockenhaus located
+
+Construct an SQL query to delete all the rows from a table where the value of a column is less than a given value.
+
+column_name: age
+value: 18
+
+What are some of the best places to eat in Boston?
+
+Because some banks refused to clear checks from certain other banks during times of economic uncertainty, a check-clearing system was created in the Federal Reserve System. It is briefly described in The Federal Reserve System‍—‌Purposes and Functions as follows:
+
+By creating the Federal Reserve System, Congress intended to eliminate the severe financial crises that had periodically swept the nation, especially the sort of financial panic that occurred in 1907. During that episode, payments were disrupted throughout the country because many banks and clearinghouses refused to clear checks drawn on certain other banks, a practice that contributed to the failure of otherwise solvent banks. To address these problems, Congress gave the Federal Reserve System the authority to establish a nationwide check-clearing system. The System, then, was to provide not only an elastic currency‍—‌that is, a currency that would expand or shrink in amount as economic conditions warranted‍—‌but also an efficient and equitable check-collection system.
+
+Extract the reason why the check clearing system was created
+
+The viola (/viˈoʊlə/ vee-OH-lə, also UK: /vaɪˈoʊlə/ vy-OH-lə, Italian: [ˈvjɔːla, viˈɔːla]) is a string instrument that is bowed, plucked, or played with varying techniques. Slightly larger than a violin, it has a lower and deeper sound. Since the 18th century, it has been the middle or alto voice of the violin family, between the violin (which is tuned a perfect fifth above) and the cello (which is tuned an octave below). The strings from low to high are typically tuned to C3, G3, D4, and A4.
+
+What is an string instrument that is similar to a Violin, but larger in size and with a lower and deeper sound?
+
+Given a JavaScript string, replace all instances of the word "today" with the word "tomorrow".
+
+let str = "Today is a great day."

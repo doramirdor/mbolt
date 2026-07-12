@@ -1,0 +1,176 @@
+diff --git a/common/CMakeLists.txt b/common/CMakeLists.txt
+index 4cf580a..f852094 100644
+--- a/common/CMakeLists.txt
++++ b/common/CMakeLists.txt
+@@ -84,6 +84,8 @@ add_library(${TARGET}
+     llguidance.cpp
+     log.cpp
+     log.h
++    mbolt-trace.cpp
++    mbolt-trace.h
+     ngram-cache.cpp
+     ngram-cache.h
+     ngram-map.cpp
+diff --git a/common/common.cpp b/common/common.cpp
+index 8f13217..6420cd4 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -5,6 +5,7 @@
+ #include "common.h"
+ #include "fit.h"
+ #include "log.h"
++#include "mbolt-trace.h"
+ #include "llama.h"
+ #include "sampling.h"
+ #include "speculative.h"
+@@ -1345,6 +1346,14 @@ std::vector<llama_adapter_lora_ptr> & common_init_result::lora() {
+ }
+ 
+ common_init_result_ptr common_init_from_params(common_params & params, bool model_only) {
++    // mbolt: env-gated MoE routing trace
++    if (const char * mbolt_trace_path = getenv("MBOLT_TRACE")) {
++        if (params.cb_eval == nullptr) {
++            mbolt_trace_init(mbolt_trace_path);
++            params.cb_eval = mbolt_trace_cb_eval;
++        }
++    }
++
+     common_init_result_ptr res(new common_init_result(params, model_only));
+ 
+     llama_model * model = res->model();
+diff --git a/common/mbolt-trace.cpp b/common/mbolt-trace.cpp
+new file mode 100644
+index 0000000..c54358d
+--- /dev/null
++++ b/common/mbolt-trace.cpp
+@@ -0,0 +1,110 @@
++#include "mbolt-trace.h"
++
++#include "log.h"
++
++#include "ggml.h"
++#include "ggml-backend.h"
++
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <mutex>
++#include <string>
++#include <vector>
++
++namespace {
++
++struct mbolt_trace_state {
++    std::string          path;
++    FILE *               f = nullptr;
++    bool                 failed = false;
++    std::mutex           mtx;
++    std::vector<uint8_t> ids_host;
++    std::vector<int32_t> rec;
++    uint64_t             n_records = 0;
++};
++
++mbolt_trace_state g_mbolt;
++
++bool mbolt_is_moe_ids_node(const struct ggml_tensor * t) {
++    if (t->op != GGML_OP_MUL_MAT_ID) {
++        return false;
++    }
++    // exactly one of these MUL_MAT_ID nodes exists per MoE layer
++    return strncmp(t->name, "ffn_moe_up-", 11) == 0 ||
++           strncmp(t->name, "ffn_moe_gate_up-", 16) == 0;
++}
++
++} // namespace
++
++void mbolt_trace_init(const char * path) {
++    g_mbolt.path = path;
++}
++
++bool mbolt_trace_cb_eval(struct ggml_tensor * t, bool ask, void * user_data) {
++    (void) user_data;
++
++    if (ask) {
++        return mbolt_is_moe_ids_node(t);
++    }
++
++    if (!mbolt_is_moe_ids_node(t)) {
++        return true;
++    }
++
++    const struct ggml_tensor * ids = t->src[2];
++    if (ids == nullptr || ids->type != GGML_TYPE_I32) {
++        return true;
++    }
++
++    const char *   dash     = strrchr(t->name, '-');
++    const uint32_t layer    = dash ? (uint32_t) atoi(dash + 1) : UINT32_MAX;
++    const uint32_t k        = (uint32_t) ids->ne[0];
++    const uint32_t n_tokens = (uint32_t) ids->ne[1];
++
++    std::lock_guard<std::mutex> lock(g_mbolt.mtx);
++
++    if (g_mbolt.failed) {
++        return true;
++    }
++
++    if (g_mbolt.f == nullptr) {
++        g_mbolt.f = fopen(g_mbolt.path.c_str(), "wb");
++        if (g_mbolt.f == nullptr) {
++            LOG_ERR("mbolt-trace: failed to open '%s' for writing\n", g_mbolt.path.c_str());
++            g_mbolt.failed = true;
++            return true;
++        }
++        const uint32_t magic    = 0x544C424Du; // "MBLT"
++        const uint32_t version  = 1;
++        const uint32_t n_expert = t->src[0] ? (uint32_t) t->src[0]->ne[2] : 0;
++        fwrite(&magic,    sizeof(magic),    1, g_mbolt.f);
++        fwrite(&version,  sizeof(version),  1, g_mbolt.f);
++        fwrite(&n_expert, sizeof(n_expert), 1, g_mbolt.f);
++        LOG_INF("mbolt-trace: logging MoE routing to '%s' (n_expert = %u)\n", g_mbolt.path.c_str(), n_expert);
++    }
++
++    // ids may live on GPU and is not contiguous - copy the full span and index via nb strides
++    g_mbolt.ids_host.resize(ggml_nbytes(ids));
++    ggml_backend_tensor_get(ids, g_mbolt.ids_host.data(), 0, ggml_nbytes(ids));
++
++    g_mbolt.rec.clear();
++    g_mbolt.rec.reserve(3 + (size_t) n_tokens * k);
++    g_mbolt.rec.push_back((int32_t) layer);
++    g_mbolt.rec.push_back((int32_t) k);
++    g_mbolt.rec.push_back((int32_t) n_tokens);
++    for (uint32_t tok = 0; tok < n_tokens; ++tok) {
++        for (uint32_t j = 0; j < k; ++j) {
++            const int32_t id = *(const int32_t *) (g_mbolt.ids_host.data() + tok * ids->nb[1] + j * ids->nb[0]);
++            g_mbolt.rec.push_back(id);
++        }
++    }
++    fwrite(g_mbolt.rec.data(), sizeof(int32_t), g_mbolt.rec.size(), g_mbolt.f);
++
++    if (++g_mbolt.n_records % 256 == 0) {
++        fflush(g_mbolt.f);
++    }
++
++    return true;
++}
+diff --git a/common/mbolt-trace.h b/common/mbolt-trace.h
+new file mode 100644
+index 0000000..15bea72
+--- /dev/null
++++ b/common/mbolt-trace.h
+@@ -0,0 +1,14 @@
++#pragma once
++
++// mbolt: env-gated MoE routing trace (MBOLT_TRACE=<path>)
++// Captures the top-k expert ids selected per token per layer by observing the
++// ids tensor (src[2]) of the per-layer expert MUL_MAT_ID node.
++//
++// Binary format (little-endian):
++//   header: uint32 magic "MBLT", uint32 version=1, uint32 n_expert
++//   record: uint32 layer, uint32 k, uint32 n_tokens, int32 ids[n_tokens*k] (token-major)
++
++struct ggml_tensor;
++
++void mbolt_trace_init(const char * path);
++bool mbolt_trace_cb_eval(struct ggml_tensor * t, bool ask, void * user_data);
