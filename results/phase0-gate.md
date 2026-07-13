@@ -8,7 +8,7 @@
 1. **Trace capture** — `MBOLT_TRACE=<file>` env-gated eval callback in llama.cpp `common/` (new `mbolt-trace.{h,cpp}` + 2-line hook, imatrix-style capture of the ids tensor `src[2]` of each layer's `ffn_moe_up` MUL_MAT_ID node). Works under Metal. Binary format `MBLT v1`.
 2. **Offset mapping** — gguf-py-based map of every expert slice byte range.
 3. **Replay engine** — physically replays the exact per-token byte-range read sequence a streaming engine would issue, against the real GGUF, at virtual offsets of each candidate layout. Per-layer read sort + adjacent-merge (gap 0), 16 KiB-aligned `pread`s, QD1. LRU cache model, N slots/layer, expert = cache unit.
-4. **Cache discipline** — macOS `F_NOCACHE` does **not** bypass already-cached pages and `purge` needs sudo, so: memory-pressure eviction (~50 GB anonymous touch) + a random-read speed probe before every run; auto re-evict when the probe exceeds 1.4× the established cold device speed. Contamination was caught and corrected twice during the gate runs.
+4. **Cache discipline** — macOS `F_NOCACHE` does **not** bypass already-cached pages and `purge` needs sudo, so: memory-pressure eviction (~50 GB anonymous touch) + a random-read speed probe before every run; auto re-evict when the probe exceeds 1.4× the established cold device speed. Contamination during the gate runs was caught and auto-corrected by this mechanism (re-evict events were printed to console only; the saved gate JSONs record the per-file cold device speed).
 5. **Clustering** — per-layer co-activation graph → greedy modularity communities, clusters ordered by heat; `chain` variant orders experts within a cluster by greedy max-weight path (optimizes *adjacency* of co-activated pairs, which is what read-merging rewards).
 
 ## Workload
@@ -18,7 +18,7 @@
 ## Routing structure (pre-condition for clustering)
 
 - Heat entropy: 6.07–6.63 bits per layer (max 7.0) — real hot/cold skew, not uniform.
-- Co-activation lift: median ≈ 1 (bulk independent) but p90 = 4.0, p99 = 17, and **23 % of expert pairs co-activate at >2× independence** → genuine clique structure. The "flat graph → stop" honesty condition does not trigger.
+- Co-activation lift: median ≈ 0.8 (bulk shows no positive co-activation; computed over pairs with ≥5 co-activations, per-layer medians 0.56–0.89), but pooled over all 48 layers p90 = 3.8, p99 = 17, and **21 % of expert pairs co-activate at >2× independence** (per-layer 17–29 %; mid-layer 24, the `trace-stats` printout: p90 = 4.0, p99 = 17, 23 %) → genuine clique structure. The "flat graph → stop" honesty condition does not trigger.
 
 ## Measured gate results (physical replay, held-out tokens)
 
@@ -40,7 +40,7 @@ Mechanism check: read counts fall exactly as designed — cold reads/token 1089 
 
 ## Per-drive projection
 
-Linear I/O model `t = reads × L + bytes / B` fit to all 88 measured replay points: L = 73 µs, B = 11.3 GB/s, R² = 0.956. Projections (warm-32 workload; **modeled, not measured** — and conservative: the model under-predicts the measured chain+pipeline gain on this Mac, 1.10× vs 1.23× measured, because it ignores locality/readahead effects):
+Linear I/O model `t = reads × L + bytes / B` fit to all 88 measured replay points: L = 73 µs, B = 11.3 GB/s, R² = 0.956. Projections (warm-32 workload; **modeled, not measured** — conservative for chain+pipeline: the model under-predicts the measured gain on this Mac, 1.10× vs 1.23×, because it ignores locality/readahead effects; slightly optimistic for interleave, 1.67× modeled vs 1.59× measured):
 
 | drive class | chain+pipeline | interleave |
 |---|---|---|
@@ -56,9 +56,9 @@ Linear I/O model `t = reads × L + bytes / B` fit to all 88 measured replay poin
 Best Phase-1-achievable layout (chain+pipeline): **1.23× warm (primary), 1.27× cold** — in the spec's judgment zone (1.15–1.3×). No second physical drive class was attached; the fitted model substitutes (labeled as such) and says slower drives dampen rather than amplify for this slice size.
 
 **Decision: PROCEED to Phase 1**, on these grounds:
-1. 1.23–1.27× is real, reproducible (within-run spreads small), on held-out data, mechanism-confirmed.
+1. 1.23–1.27× is real and directionally reproducible — every chain+pipeline run beats baseline (warm-32 per-run 1.14–1.58×, N=5; cold 1.13–1.40×, N=3; medians 1.23×/1.27×) — on held-out data, mechanism-confirmed. Run-to-run spread is substantial (CV ≈ 11–14 %), so the point estimate carries roughly ±0.1× uncertainty.
 2. Phase 1 is the vehicle for validating the simulator against end-to-end reality (spec: a mispredicting simulator is itself a finding).
-3. The measured Phase-2 headroom (interleave: 1.6–2.4×, biggest exactly where memory is tightest) justifies the pipeline: it requires per-expert (or interleave-aware) tensor layout, which current llama.cpp cannot load (verified: legacy `blk.N.ffn_up.E` names remain only in the arch name table; no loader path) — an engine/format follow-up built on Phase 1's rewriter.
+3. The measured Phase-2 headroom (interleave: 1.36–2.37×, biggest exactly where memory is tightest) justifies the pipeline: it requires per-expert (or interleave-aware) tensor layout, which current llama.cpp cannot load (verified: legacy `blk.N.ffn_up.E` names remain only in the arch name table; no loader path) — an engine/format follow-up built on Phase 1's rewriter.
 
 **Phase-1 target layout: `chain+pipeline`** (expert permutation per layer by clique+greedy-chain order, + expert tensors packed contiguously in execution order).
 
@@ -66,5 +66,5 @@ Best Phase-1-achievable layout (chain+pipeline): **1.23× warm (primary), 1.27×
 
 - QD1 synchronous replay models mmap page-fault streaming (current llama.cpp behavior); async-prefetch engines would see different (likely smaller) per-read-overhead gains.
 - Warm-cache hit rates (0.78 @ 32 slots) come from the LRU model, not a real engine's residency policy.
-- macOS page cache was the dominant measurement hazard; every reported run passed a cold-probe check, and two contaminated runs were auto-re-evicted before measuring.
-- All completions hit the 384-token cap (thinking mode) — decode-heavy workload, which is the regime under test.
+- macOS page cache was the dominant measurement hazard; every reported run passed a cold-probe check, with contaminated states auto-re-evicted before measuring (probe/evict events were console output; the JSONs persist the cold device baselines).
+- 188 of 200 completions (94 %) hit the 384-token cap (thinking mode); the remaining 12 stopped early at 230–361 tokens — still a decode-heavy workload, which is the regime under test.

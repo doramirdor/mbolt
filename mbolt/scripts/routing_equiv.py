@@ -2,9 +2,11 @@
 
 Teacher-forces the same text through original and rewritten models with
 MBOLT_TRACE enabled, then verifies the selected expert sets map through the
-permutation. Layers 0-1 see bit-identical inputs, so their mapping must be
-EXACTLY 100% - any deviation is a semantic bug in the rewrite. Deeper layers
-drift by engine FP-reduction noise (reported, threshold loose).
+permutation. Layer 0's input is bit-identical, so its mapping must be exactly
+100% (barring bitwise top-k boundary ties) - any deviation is a semantic bug
+in the rewrite. Layer 1's input is already ulp-perturbed by layer 0's
+permuted-order softmax; its exactness is expected and enforced as a tripwire.
+Deeper layers drift by engine FP-reduction noise (reported, threshold loose).
 """
 
 import json

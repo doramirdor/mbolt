@@ -18,7 +18,7 @@ scripts/ci_correctness.sh                     # 4-gate correctness suite
 - **I/O floor, measured on the physical files** (Qwen3-Next-80B IQ3_XXS, cold,
   held-out trace): 1418 → 1104 reads/token, 255.7 → 204.1 ms/token — **1.25×
   from moving bytes**. Replay across regimes: 1.09–1.27× (chain+pipeline);
-  interleave layout (needs per-expert tensors): **1.59–2.29×**.
+  interleave layout (needs per-expert tensors): **1.36–2.37×**.
 - **Correctness**: weights byte-exact; routing maps 100.000% through the
   permutation at equal inputs; output perturbation (KLD 0.00096, top-1 98.9%)
   is **5× below** the same engine's CPU↔Metal backend delta. Token-identity

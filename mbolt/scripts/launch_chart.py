@@ -41,22 +41,26 @@ ax.grid(axis="y", alpha=0.3)
 
 # ---- Panel 2: llama.cpp end-to-end today ----
 ax = axes[1]
-groups = ["llama.cpp today\n(mmap faults, squeezed)", "cached ceiling\n(no squeeze)"]
-orig_vals = [np.median([12.2, 11.1]), 23.8]
-mb_vals = [np.median([11.2, 11.4]), 23.8]
+groups = ["llama.cpp today\n(CPU ngl=0, mmap faults, squeezed)"]
+orig_vals = [np.median([12.2, 11.1])]
+mb_vals = [np.median([11.2, 11.4])]
 x = np.arange(len(groups))
-w = 0.34
+w = 0.28
 ax.bar(x - w / 2, orig_vals, w, label="original", color="#8c8c8c")
 ax.bar(x + w / 2, mb_vals, w, label="mbolt", color="#2c7fb8")
 for xi, v in zip(x - w / 2, orig_vals):
     ax.text(xi, v + 0.3, f"{v:.1f}", ha="center", fontsize=9)
 for xi, v in zip(x + w / 2, mb_vals):
     ax.text(xi, v + 0.3, f"{v:.1f}", ha="center", fontsize=9)
+ax.axhline(23.8, ls="--", color="#666", lw=1)
+ax.text(0.02, 24.1, "cached compute ceiling 23.8 tok/s (runs 24.0/23.6)", fontsize=8, color="#555")
 ax.set_xticks(x, groups, fontsize=9)
+ax.set_ylim(0, 27)
 ax.set_ylabel("end-to-end decode tok/s")
-ax.set_title("llama.cpp end-to-end today: parity\n"
-             "16KiB page-fault streaming + kernel readahead is\n"
-             "layout-blind - explicit slice reads are required to harvest", fontsize=10)
+ax.set_title("llama.cpp end-to-end today (CPU mode): parity\n"
+             "mmap fault streaming is layout-blind (inferred; equal pageins) -\n"
+             "explicit slice reads needed to harvest. Metal e2e excluded:\n"
+             "stock file was not streaming (pageins 2x file; see report §4)", fontsize=9)
 ax.legend(fontsize=9)
 ax.grid(axis="y", alpha=0.3)
 
@@ -82,7 +86,7 @@ ax.legend(fontsize=8)
 ax.grid(axis="y", alpha=0.3)
 
 fig.suptitle(
-    "mbolt: profile-guided layout optimization for GGUF - M5 Pro MacBook Pro, APPLE SSD AP1024Z, llama.cpp b6"
+    "mbolt: profile-guided layout optimization for GGUF - M5 Pro MacBook Pro, APPLE SSD AP1024Z, llama.cpp b9977"
     " - bit-exact weights, permutation-equivalent routing (verified), output noise below backend-switch envelope",
     fontsize=11,
 )
