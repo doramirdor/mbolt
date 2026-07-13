@@ -67,7 +67,7 @@ interleave = [1.589, 1.780, 1.750, 2.292]
 x = np.arange(len(regimes))
 w = 0.34
 ax.bar(x - w / 2, chainpipe, w, label="chain+pipeline (shipped)", color="#2c7fb8")
-ax.bar(x + w / 2, interleave, w, label="interleave (needs per-expert tensors)", color="#d4a017")
+ax.bar(x + w / 2, interleave, w, label="interleave (shipped Phase 2, strided views; experimental)", color="#d4a017")
 for xi, v in zip(x - w / 2, chainpipe):
     ax.text(xi, v + 0.02, f"{v:.2f}", ha="center", fontsize=8)
 for xi, v in zip(x + w / 2, interleave):
@@ -77,13 +77,13 @@ ax.set_xticks(x, regimes, fontsize=9)
 ax.set_ylabel("measured I/O speedup vs stock layout")
 ax.set_title("measured replay speedups (median, held-out)\n"
              "explicit-read engines harvest these today;\n"
-             "interleave is the Phase-2 prize", fontsize=10)
+             "interleave shipped in Phase 2 (CPU experts)", fontsize=10)
 ax.legend(fontsize=8)
 ax.grid(axis="y", alpha=0.3)
 
 fig.suptitle(
     "mbolt: profile-guided layout optimization for GGUF - M5 Pro MacBook Pro, APPLE SSD AP1024Z, llama.cpp b9977"
-    " - bit-exact weights, permutation-equivalent routing (verified), output noise below backend-switch envelope",
+    " - bit-exact weights, permutation-equivalent routing (verified), output noise vs backend-switch envelope: 0.2x (chain+pipeline), 1.26x (interleave, experimental)",
     fontsize=11,
 )
 fig.tight_layout(rect=[0, 0, 1, 0.92])
