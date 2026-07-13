@@ -1,0 +1,24 @@
+holder: held 24 GB, mlocked 24 GB
+  (file-backed before run: 9.2 GB)
+run 0   orig:  19.90 tok/s
+  (file-backed before run: 16.5 GB)
+run 0  mbolt:  16.50 tok/s
+  (file-backed before run: 12.6 GB)
+run 1  mbolt:  14.40 tok/s
+  (file-backed before run: 10.7 GB)
+run 1   orig:  22.10 tok/s
+  (file-backed before run: 12.2 GB)
+run 2   orig:  22.00 tok/s
+  (file-backed before run: 12.4 GB)
+run 2  mbolt:  15.40 tok/s
+  (file-backed before run: 12.4 GB)
+run 3  mbolt:  14.10 tok/s
+  (file-backed before run: 12.9 GB)
+run 3   orig:  22.50 tok/s
+  (file-backed before run: 13.3 GB)
+run 4   orig:  17.60 tok/s
+  (file-backed before run: 11.6 GB)
+run 4  mbolt:  15.10 tok/s
+  orig: median 22.00 tok/s, runs [17.6, 19.9, 22.0, 22.1, 22.5]
+ mbolt: median 15.10 tok/s, runs [14.1, 14.4, 15.1, 15.4, 16.5]
+speedup (median): 0.686x

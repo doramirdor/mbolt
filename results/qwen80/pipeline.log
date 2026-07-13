@@ -1,0 +1,140 @@
+=== map ===
+file: /Users/dor/Documents/code/GPUopt/models/Qwen3-Next-80B-A3B-Instruct-UD-IQ3_XXS.gguf (33.09 GB)
+layers with experts: 48, experts/layer: 512
+total expert bytes: 31.58 GB (95.4% of file)
+     up: slice sizes ['392KiB', '440KiB'], types ['IQ3_S', 'IQ3_XXS']
+   gate: slice sizes ['392KiB', '440KiB'], types ['IQ3_S', 'IQ3_XXS']
+   down: slice sizes ['392KiB', '440KiB', '544KiB'], types ['IQ3_S', 'IQ3_XXS', 'IQ4_XS']
+  expert tensors in layer order on disk: True
+=== capture (120 prompts x 256 tokens) ===
+[119/120] dolly/closed_qa      prompt=149 completion=250 total_gen=24827 elapsed=644s
+[120/120] codealpaca           prompt=42 completion=256 total_gen=25083 elapsed=651s
+done: 25083 generated tokens in 651s
+=== cluster (train 80%) ===
+clustered 48 layers over 19970 decode tokens
+heat entropy bits: median 8.34 (max possible 9.00)
+frac pairs with lift>1.5: median 0.480
+clusters per layer: median 17
+=== sim gate: warm 128/512 slots, 4 runs ===
+evaluating on held-out tokens [19970:24963]
+evicting page cache via memory pressure (file-backed now 40.3 GB)...
+eviction done (file-backed now 19.7 GB)
+device random-read speed (cold, 600KiB): 3631 MB/s; re-evict ceiling 5084 MB/s
+decode tokens 4993, 4 runs, window=176 (48 warmup + 128 measured), cache=128 slots/layer
+cold-read probe: 4188 MB/s (ceiling 5084)
+  run 0         pipeline:   26.27 ms/tok median,  38.07 tok/s,  286.0 reads/tok,  126.4 MB/tok, hit 0.77
+  run 0           clique:   28.46 ms/tok median,  35.14 tok/s,  280.6 reads/tok,  128.8 MB/tok, hit 0.77
+  run 0  clique+pipeline:   26.18 ms/tok median,  38.20 tok/s,  280.6 reads/tok,  126.3 MB/tok, hit 0.77
+  run 0            chain:   27.41 ms/tok median,  36.49 tok/s,  253.2 reads/tok,  128.4 MB/tok, hit 0.77
+  run 0         baseline:   27.99 ms/tok median,  35.72 tok/s,  286.0 reads/tok,  128.9 MB/tok, hit 0.77
+  run 0             heat:   27.50 ms/tok median,  36.37 tok/s,  284.4 reads/tok,  128.9 MB/tok, hit 0.77
+  run 0       interleave:   14.65 ms/tok median,  68.27 tok/s,   84.4 reads/tok,  124.7 MB/tok, hit 0.77
+  run 0   chain+pipeline:   22.11 ms/tok median,  45.23 tok/s,  253.2 reads/tok,  126.1 MB/tok, hit 0.77
+cold-read probe: 4878 MB/s (ceiling 5084)
+  run 1            chain:   15.69 ms/tok median,  63.75 tok/s,  185.6 reads/tok,   89.3 MB/tok, hit 0.83
+  run 1       interleave:    8.73 ms/tok median, 114.57 tok/s,   61.9 reads/tok,   86.6 MB/tok, hit 0.83
+  run 1           clique:   15.62 ms/tok median,  64.02 tok/s,  197.7 reads/tok,   89.5 MB/tok, hit 0.83
+  run 1             heat:   15.49 ms/tok median,  64.56 tok/s,  199.8 reads/tok,   89.5 MB/tok, hit 0.83
+  run 1   chain+pipeline:   13.49 ms/tok median,  74.15 tok/s,  185.6 reads/tok,   87.7 MB/tok, hit 0.83
+  run 1         pipeline:   13.52 ms/tok median,  73.94 tok/s,  200.1 reads/tok,   87.8 MB/tok, hit 0.83
+  run 1         baseline:   15.25 ms/tok median,  65.58 tok/s,  200.1 reads/tok,   89.5 MB/tok, hit 0.83
+  run 1  clique+pipeline:   13.43 ms/tok median,  74.44 tok/s,  197.7 reads/tok,   87.7 MB/tok, hit 0.83
+cold-read probe: 5055 MB/s (ceiling 5084)
+  run 2         pipeline:   15.41 ms/tok median,  64.89 tok/s,  206.3 reads/tok,   91.0 MB/tok, hit 0.81
+  run 2             heat:   18.02 ms/tok median,  55.49 tok/s,  205.5 reads/tok,   92.8 MB/tok, hit 0.81
+  run 2   chain+pipeline:   16.42 ms/tok median,  60.89 tok/s,  186.1 reads/tok,   90.9 MB/tok, hit 0.81
+  run 2       interleave:    9.27 ms/tok median, 107.83 tok/s,   62.0 reads/tok,   89.8 MB/tok, hit 0.81
+  run 2           clique:   16.09 ms/tok median,  62.15 tok/s,  203.0 reads/tok,   92.8 MB/tok, hit 0.81
+  run 2         baseline:   16.19 ms/tok median,  61.78 tok/s,  206.3 reads/tok,   92.9 MB/tok, hit 0.81
+  run 2  clique+pipeline:   15.08 ms/tok median,  66.31 tok/s,  203.0 reads/tok,   91.0 MB/tok, hit 0.81
+  run 2            chain:   15.42 ms/tok median,  64.85 tok/s,  186.1 reads/tok,   92.5 MB/tok, hit 0.81
+cold-read probe: 5433 MB/s (ceiling 5084)
+evicting page cache via memory pressure (file-backed now 27.2 GB)...
+eviction done (file-backed now 17.9 GB)
+cold-read probe after evict: 3568 MB/s
+  run 3         pipeline:   15.35 ms/tok median,  65.15 tok/s,  149.4 reads/tok,   65.3 MB/tok, hit 0.86
+  run 3         baseline:   16.00 ms/tok median,  62.52 tok/s,  149.4 reads/tok,   66.7 MB/tok, hit 0.86
+  run 3            chain:   15.14 ms/tok median,  66.05 tok/s,  140.2 reads/tok,   66.5 MB/tok, hit 0.86
+  run 3   chain+pipeline:   15.26 ms/tok median,  65.52 tok/s,  140.2 reads/tok,   65.3 MB/tok, hit 0.86
+  run 3             heat:   15.31 ms/tok median,  65.31 tok/s,  148.7 reads/tok,   66.7 MB/tok, hit 0.86
+  run 3  clique+pipeline:   15.63 ms/tok median,  63.97 tok/s,  147.8 reads/tok,   65.3 MB/tok, hit 0.86
+  run 3           clique:   15.19 ms/tok median,  65.83 tok/s,  147.8 reads/tok,   66.7 MB/tok, hit 0.86
+  run 3       interleave:    9.13 ms/tok median, 109.58 tok/s,   46.7 reads/tok,   64.5 MB/tok, hit 0.86
+
+=== speedup vs baseline (same-window ratios, median over runs) ===
+          baseline: 1.000x  (runs: ['1.000', '1.000', '1.000', '1.000'])
+            clique: 0.995x  (runs: ['0.976', '0.984', '1.006', '1.053'])
+             chain: 1.036x  (runs: ['0.972', '1.021', '1.050', '1.057'])
+              heat: 1.001x  (runs: ['0.898', '0.984', '1.018', '1.045'])
+          pipeline: 1.058x  (runs: ['1.042', '1.050', '1.066', '1.127'])
+   clique+pipeline: 1.071x  (runs: ['1.023', '1.069', '1.073', '1.135'])
+    chain+pipeline: 1.089x  (runs: ['0.986', '1.048', '1.131', '1.266'])
+        interleave: 1.750x  (runs: ['1.745', '1.747', '1.753', '1.911'])
+=== sim gate: cold, 2 runs ===
+evaluating on held-out tokens [19970:24963]
+evicting page cache via memory pressure (file-backed now 20.8 GB)...
+eviction done (file-backed now 18.5 GB)
+device random-read speed (cold, 600KiB): 3560 MB/s; re-evict ceiling 4984 MB/s
+decode tokens 4993, 2 runs, window=96 (64 warmup + 32 measured), cache=0 slots/layer
+cold-read probe: 3588 MB/s (ceiling 4984)
+  run 0         pipeline:  176.19 ms/tok median,   5.68 tok/s, 1418.2 reads/tok,  627.5 MB/tok, hit 0.00
+  run 0           clique:  169.92 ms/tok median,   5.89 tok/s, 1309.8 reads/tok,  638.2 MB/tok, hit 0.00
+  run 0  clique+pipeline:  167.84 ms/tok median,   5.96 tok/s, 1309.8 reads/tok,  626.7 MB/tok, hit 0.00
+  run 0            chain:  159.61 ms/tok median,   6.27 tok/s, 1103.7 reads/tok,  635.0 MB/tok, hit 0.00
+  run 0         baseline:  179.33 ms/tok median,   5.58 tok/s, 1418.2 reads/tok,  640.2 MB/tok, hit 0.00
+  run 0             heat:  174.95 ms/tok median,   5.72 tok/s, 1375.1 reads/tok,  639.4 MB/tok, hit 0.00
+  run 0       interleave:   80.79 ms/tok median,  12.38 tok/s,  367.9 reads/tok,  619.1 MB/tok, hit 0.00
+  run 0   chain+pipeline:  142.99 ms/tok median,   6.99 tok/s, 1103.7 reads/tok,  625.1 MB/tok, hit 0.00
+cold-read probe: 3842 MB/s (ceiling 4984)
+  run 1            chain:  141.87 ms/tok median,   7.05 tok/s, 1090.7 reads/tok,  634.7 MB/tok, hit 0.00
+  run 1       interleave:   69.44 ms/tok median,  14.40 tok/s,  363.6 reads/tok,  619.1 MB/tok, hit 0.00
+  run 1           clique:  150.56 ms/tok median,   6.64 tok/s, 1324.8 reads/tok,  638.3 MB/tok, hit 0.00
+  run 1             heat:  162.64 ms/tok median,   6.15 tok/s, 1385.7 reads/tok,  639.6 MB/tok, hit 0.00
+  run 1   chain+pipeline:  132.32 ms/tok median,   7.56 tok/s, 1090.7 reads/tok,  625.1 MB/tok, hit 0.00
+  run 1         pipeline:  159.79 ms/tok median,   6.26 tok/s, 1416.4 reads/tok,  627.5 MB/tok, hit 0.00
+  run 1         baseline:  164.18 ms/tok median,   6.09 tok/s, 1416.4 reads/tok,  640.2 MB/tok, hit 0.00
+  run 1  clique+pipeline:  145.48 ms/tok median,   6.87 tok/s, 1324.8 reads/tok,  626.8 MB/tok, hit 0.00
+
+=== speedup vs baseline (same-window ratios, median over runs) ===
+          baseline: 1.000x  (runs: ['1.000', '1.000'])
+            clique: 1.073x  (runs: ['1.055', '1.091'])
+             chain: 1.140x  (runs: ['1.124', '1.157'])
+              heat: 1.017x  (runs: ['1.009', '1.025'])
+          pipeline: 1.023x  (runs: ['1.018', '1.027'])
+   clique+pipeline: 1.099x  (runs: ['1.069', '1.129'])
+    chain+pipeline: 1.247x  (runs: ['1.241', '1.254'])
+        interleave: 2.292x  (runs: ['2.220', '2.364'])
+=== rewrite chain+pipeline ===
+rewrote 843 tensors (144 expert tensors, 48 router tensors) in 63.3s
+size: 33.095 GB -> 33.096 GB (+0.003% overhead)
+=== byte-verify ===
+PASS byte-verify: 32 permuted tensors exact, 534 passthrough tensors identical
+=== routing equivalence ===
+routing mismatch by layer: L0=0.0000% L1=0.0000% median=3.95% max=6.73%
+PASS routing-equiv: layer-0/1 mapping exact; deeper drift = FP-order noise
+=== E2E streaming benchmark (24GB mlocked holder) ===
+holder: held 24 GB, mlocked 24 GB
+  (file-backed before run: 9.2 GB)
+run 0   orig:  19.90 tok/s
+  (file-backed before run: 16.5 GB)
+run 0  mbolt:  16.50 tok/s
+  (file-backed before run: 12.6 GB)
+run 1  mbolt:  14.40 tok/s
+  (file-backed before run: 10.7 GB)
+run 1   orig:  22.10 tok/s
+  (file-backed before run: 12.2 GB)
+run 2   orig:  22.00 tok/s
+  (file-backed before run: 12.4 GB)
+run 2  mbolt:  15.40 tok/s
+  (file-backed before run: 12.4 GB)
+run 3  mbolt:  14.10 tok/s
+  (file-backed before run: 12.9 GB)
+run 3   orig:  22.50 tok/s
+  (file-backed before run: 13.3 GB)
+run 4   orig:  17.60 tok/s
+  (file-backed before run: 11.6 GB)
+run 4  mbolt:  15.10 tok/s
+  orig: median 22.00 tok/s, runs [17.6, 19.9, 22.0, 22.1, 22.5]
+ mbolt: median 15.10 tok/s, runs [14.1, 14.4, 15.1, 15.4, 16.5]
+speedup (median): 0.686x
+=== PIPELINE DONE ===

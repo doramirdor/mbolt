@@ -1,0 +1,49 @@
+{
+  "model_30b": {
+    "greedy_50prompt_proof": {
+      "orig_vs_orig": {"mismatches": 0, "n": 50},
+      "orig_vs_identity_rewrite": {"mismatches": 0, "n": 50},
+      "orig_vs_mbolt_permuted": {"mismatches": 3, "n": 50, "note": "divergence mid-stream at near-ties; see routing_equiv"}
+    },
+    "routing_equiv_teacher_forced": {
+      "match_overall_pct": 97.045,
+      "mismatch_by_layer_pct": {"L0": 0.0, "L1": 0.0, "L2": 0.19, "L8": 1.17, "L20": 2.73, "L30": 4.97, "L40": 4.39, "L47": 2.73},
+      "text": "traces/kl_text.txt", "positions": 1026
+    },
+    "kl_wikitext_c512_chunks24": {
+      "floor_orig_vs_own_logits": {"mean_kld": 1e-06, "same_top_pct": 100.0},
+      "mbolt_vs_orig": {"mean_kld": 0.00096, "max_kld": 0.173111, "same_top_pct": 98.873, "ppl_q": 8.606675, "ppl_base": 8.579845, "ppl_ratio": 1.003127},
+      "backend_cpu_vs_metal_orig": {"mean_kld": 0.004844, "max_kld": 0.427729, "same_top_pct": 96.732, "ppl_ratio": 1.003564}
+    },
+    "kl_text_c512": {
+      "identity_vs_orig": {"mean_kld": 1e-06, "max_kld": 4.6e-05},
+      "mbolt_vs_orig": {"mean_kld": 0.000598, "max_kld": 0.024659, "same_top_pct": 98.627},
+      "mbolt_vs_orig_cpu_only": {"mean_kld": 0.003378, "same_top_pct": 95.098}
+    },
+    "ci_run": {"byte_verify": "PASS 32 permuted + 308 passthrough", "identity_proof": "PASS 50/50", "routing_equiv": "PASS L0=L1=0.0000%, median 3.27%, max 5.85%", "kld_gate": {"mbolt": 0.000892, "backend": 0.005569, "pass": true}}
+  },
+  "model_80b": {
+    "rewrite": {"tensors": 843, "expert_tensors": 144, "router_tensors": 48, "seconds": 63.3, "size_overhead_pct": 0.003},
+    "byte_verify": "PASS 32 permuted + 534 passthrough",
+    "routing_equiv": {"L0_pct": 0.0, "L1_pct": 0.0, "median_pct": 3.95, "max_pct": 6.73},
+    "closure_cold_replay_32tok": {
+      "orig_file_stock": {"ms_per_tok": 255.65, "reads_per_tok": 1418.2, "mb_per_tok": 640.2},
+      "orig_file_virtual_chain_pipeline": {"ms_per_tok": 206.13, "reads_per_tok": 1103.7, "mb_per_tok": 625.1},
+      "mbolt_file_real_offsets": {"ms_per_tok": 204.05, "reads_per_tok": 1103.7, "mb_per_tok": 626.7}
+    },
+    "e2e_metal_ot_cpu_24gb_mlock": {
+      "orig_tok_s": [17.6, 19.9, 22.0, 22.1, 22.5], "mbolt_tok_s": [14.1, 14.4, 15.1, 15.4, 16.5],
+      "pageins_gb": {"orig": 66.56, "mbolt": 39.6}, "note": "orig not streaming: Metal-mapped buffer spans whole interleaved file, keeps experts resident; pageins exactly 2x file size"
+    },
+    "e2e_cpu_ngl0_24gb_mlock": {
+      "orig_tok_s": [12.2, 11.1], "mbolt_tok_s": [11.2, 11.4],
+      "pageins_gb": {"orig": [40.88, 42.38], "mbolt": [41.88, 41.8]},
+      "cached_ceiling_tok_s": [24.0, 23.6]
+    },
+    "device_check_cold": {
+      "orig_file": {"random600k_mbs": 2638, "seq8m_mbs": 7736},
+      "mbolt_file": {"random600k_mbs": 2709, "seq8m_mbs": 9401}
+    }
+  },
+  "provenance": "All values transcribed from measurement runs on 2026-07-12, M5 Pro MacBook Pro, APPLE SSD AP1024Z. Raw per-run gate data in results/gate_*.json and results/qwen80/*.json; pipeline log in results/qwen80/pipeline.log."
+}
