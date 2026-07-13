@@ -1,0 +1,27 @@
+held 24 GB, mlocked 24 GB
+rep 0 orig pf qd1:   8.50 tok/s | pf 28672 reads / 12.86 GB
+rep 0 orig pf qd4:   9.90 tok/s | pf 29705 reads / 13.43 GB
+rep 0 ilv  pf qd1:  10.20 tok/s | pf 8401 reads / 12.54 GB
+rep 0 ilv  pf qd4:  10.00 tok/s | pf 8491 reads / 12.75 GB
+rep 0 ilv  pf qd8:   9.70 tok/s | pf 8441 reads / 12.61 GB
+rep 1 ilv  pf qd8:  10.20 tok/s | pf 8601 reads / 12.97 GB
+rep 1 ilv  pf qd4:   8.80 tok/s | pf 8486 reads / 12.70 GB
+rep 1 ilv  pf qd1:   9.70 tok/s | pf 8654 reads / 13.07 GB
+rep 1 orig pf qd4:   9.30 tok/s | pf 27802 reads / 12.45 GB
+rep 1 orig pf qd1:   8.50 tok/s | pf n/a
+rep 2 orig pf qd1:   8.80 tok/s | pf 28744 reads / 12.91 GB
+rep 2 orig pf qd4:   9.40 tok/s | pf 28983 reads / 12.96 GB
+rep 2 ilv  pf qd1:   9.80 tok/s | pf 8600 reads / 12.87 GB
+rep 2 ilv  pf qd4:   9.50 tok/s | pf 8862 reads / 13.45 GB
+rep 2 ilv  pf qd8:   7.90 tok/s | pf 8926 reads / 13.69 GB
+
+orig pf qd1: median 8.50 tok/s, runs [8.5, 8.5, 8.8]
+orig pf qd4: median 9.40 tok/s, runs [9.3, 9.4, 9.9]
+ilv  pf qd1: median 9.80 tok/s, runs [9.7, 9.8, 10.2]
+ilv  pf qd4: median 9.50 tok/s, runs [8.8, 9.5, 10.0]
+ilv  pf qd8: median 9.70 tok/s, runs [7.9, 9.7, 10.2]
+
+QD4 vs QD1 (orig): 1.106x
+QD4 vs QD1 (ilv) : 0.969x
+QD8 vs QD4 (ilv) : 1.021x
+layout at QD4    : 1.011x
