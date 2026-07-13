@@ -12,4 +12,4 @@ Measured on Qwen3-Next-80B-A3B IQ3_XXS (48×512 experts, M5 Pro):
 
 Why this matters for MLX specifically: Apple SSDs have huge sequential-vs-scattered gaps at QD1, and unified memory means the streamer's reads land directly in the compute buffer. The safetensors container gives you free rein over expert order — the layout pass is offline, bit-exact per expert, and ~200 lines given a routing trace.
 
-The mbolt file format also embeds the profile itself (`mbolt.*` metadata: per-expert heat, tier hints, top co-activation cliques, the permutation) so a streamer can make pinning/prefetch decisions without re-profiling. Happy to adapt the trace→cluster→rewrite pipeline to safetensors if there's interest: <REPO LINK>.
+The mbolt file format also embeds the profile itself (`mbolt.*` metadata: per-expert heat, tier hints, top co-activation cliques, the permutation) so a streamer can make pinning/prefetch decisions without re-profiling. Happy to adapt the trace→cluster→rewrite pipeline to safetensors if there's interest: https://github.com/doramirdor/mbolt.

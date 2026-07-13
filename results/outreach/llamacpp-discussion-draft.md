@@ -10,6 +10,6 @@ This thread debates mmap vs direct I/O for MoE streaming. I measured a third var
 
 3. **Layout pays at the I/O level, big.** Replaying the exact per-token read pattern cold against the physical files: co-activation-ordered layout cuts reads/token 1418 → 775; an interleaved layout (each expert's up|gate|down contiguous, loaded via strided views — small loader patch, `mul_mat_id` already addresses experts via nb02) cuts it to ~370: **2.23× faster cold decode I/O**. On fast Apple NVMe the end-to-end conversion is eaten by compute (42ms/token) — on the 1-2GB/s drives discussed in this thread, the I/O share is the bottleneck and this is where the tok/s should move.
 
-Patches + rewriter + I/O simulator + full honesty ledger (incl. what did NOT work: predictive prefetch, and why token-identity is impossible under any expert permutation): <REPO LINK>.
+Patches + rewriter + I/O simulator + full honesty ledger (incl. what did NOT work: predictive prefetch, and why token-identity is impossible under any expert permutation): https://github.com/doramirdor/mbolt.
 
 Suggested takeaway for the mmap-vs-O_DIRECT debate: the win isn't the syscall, it's (a) reading *slices* instead of faulting pages, and (b) a file layout that makes those slices contiguous. Both compose with either I/O path.
