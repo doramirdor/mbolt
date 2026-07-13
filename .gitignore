@@ -3,6 +3,7 @@ llama.cpp/
 traces/*.bin
 traces/wikitext-2-raw*
 results/*.bin
+results/**/*.bin
 mbolt/.venv/
 __pycache__/
 *.egg-info/
