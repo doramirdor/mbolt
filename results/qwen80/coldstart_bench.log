@@ -1,0 +1,22 @@
+rep 0 orig      :  13.50 tok/s (first 32 tokens, cold) | pf: off
+rep 0 orig +pf  :  11.90 tok/s (first 32 tokens, cold) | pf: 9799 reads / 4.51 GB
+rep 0 mbolt     :  11.90 tok/s (first 32 tokens, cold) | pf: off
+rep 0 mbolt+pf  :  12.70 tok/s (first 32 tokens, cold) | pf: 7730 reads / 4.07 GB
+rep 1 mbolt+pf  :  12.40 tok/s (first 32 tokens, cold) | pf: 9069 reads / 4.64 GB
+rep 1 mbolt     :  10.70 tok/s (first 32 tokens, cold) | pf: off
+rep 1 orig +pf  :  12.30 tok/s (first 32 tokens, cold) | pf: 9012 reads / 4.06 GB
+rep 1 orig      :   9.70 tok/s (first 32 tokens, cold) | pf: off
+rep 2 orig      :  12.10 tok/s (first 32 tokens, cold) | pf: off
+rep 2 orig +pf  :  12.40 tok/s (first 32 tokens, cold) | pf: 8918 reads / 4.09 GB
+rep 2 mbolt     :  12.10 tok/s (first 32 tokens, cold) | pf: off
+rep 2 mbolt+pf  :  12.50 tok/s (first 32 tokens, cold) | pf: 8347 reads / 4.14 GB
+
+orig      : median 12.10 tok/s, runs [9.7, 12.1, 13.5]
+orig +pf  : median 12.30 tok/s, runs [11.9, 12.3, 12.4]
+mbolt     : median 11.90 tok/s, runs [10.7, 11.9, 12.1]
+mbolt+pf  : median 12.50 tok/s, runs [12.4, 12.5, 12.7]
+
+cold-start layout win, explicit reads (mbolt+pf vs orig+pf): 1.016x
+cold-start full stack (mbolt+pf vs orig no-pf): 1.033x
+cold-start prefetch effect on orig: 1.017x
+cold-start prefetch effect on mbolt: 1.050x

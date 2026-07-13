@@ -12,7 +12,7 @@ index 4cf580a..f852094 100644
      ngram-cache.h
      ngram-map.cpp
 diff --git a/common/common.cpp b/common/common.cpp
-index 8f13217..6420cd4 100644
+index 8f13217..de799a7 100644
 --- a/common/common.cpp
 +++ b/common/common.cpp
 @@ -5,6 +5,7 @@
@@ -23,14 +23,21 @@ index 8f13217..6420cd4 100644
  #include "llama.h"
  #include "sampling.h"
  #include "speculative.h"
-@@ -1345,6 +1346,14 @@ std::vector<llama_adapter_lora_ptr> & common_init_result::lora() {
+@@ -1345,6 +1346,21 @@ std::vector<llama_adapter_lora_ptr> & common_init_result::lora() {
  }
  
  common_init_result_ptr common_init_from_params(common_params & params, bool model_only) {
-+    // mbolt: env-gated MoE routing trace
-+    if (const char * mbolt_trace_path = getenv("MBOLT_TRACE")) {
-+        if (params.cb_eval == nullptr) {
-+            mbolt_trace_init(mbolt_trace_path);
++    // mbolt: env-gated MoE routing tools (trace + explicit-read prefetch)
++    {
++        const char * mbolt_trace_path    = getenv("MBOLT_TRACE");
++        const char * mbolt_prefetch_path = getenv("MBOLT_PREFETCH");
++        if ((mbolt_trace_path || mbolt_prefetch_path) && params.cb_eval == nullptr) {
++            if (mbolt_trace_path) {
++                mbolt_trace_init(mbolt_trace_path);
++            }
++            if (mbolt_prefetch_path) {
++                mbolt_prefetch_init(mbolt_prefetch_path);
++            }
 +            params.cb_eval = mbolt_trace_cb_eval;
 +        }
 +    }
@@ -40,10 +47,10 @@ index 8f13217..6420cd4 100644
      llama_model * model = res->model();
 diff --git a/common/mbolt-trace.cpp b/common/mbolt-trace.cpp
 new file mode 100644
-index 0000000..c54358d
+index 0000000..b9d6c91
 --- /dev/null
 +++ b/common/mbolt-trace.cpp
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,349 @@
 +#include "mbolt-trace.h"
 +
 +#include "log.h"
@@ -51,6 +58,12 @@ index 0000000..c54358d
 +#include "ggml.h"
 +#include "ggml-backend.h"
 +
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <unistd.h>
++
++#include <algorithm>
 +#include <cstdint>
 +#include <cstdio>
 +#include <cstdlib>
@@ -60,6 +73,8 @@ index 0000000..c54358d
 +#include <vector>
 +
 +namespace {
++
++// ---------------- trace ----------------
 +
 +struct mbolt_trace_state {
 +    std::string          path;
@@ -73,6 +88,184 @@ index 0000000..c54358d
 +
 +mbolt_trace_state g_mbolt;
 +
++// ---------------- prefetch ----------------
++
++struct mbolt_prefetch_state {
++    std::string           sidecar;
++    bool                  tried_init = false;
++    bool                  ok = false;
++    std::mutex            mtx;
++    int                   fd = -1;
++    uint8_t *             map = nullptr;   // read-only mapping for mincore()
++    size_t                file_size = 0;
++    size_t                page = 16384;
++    uint32_t              n_layers = 0;
++    uint32_t              n_expert = 0;
++    uint32_t              n_expert_used = 0;
++    std::vector<uint64_t> base;            // [n_layers*3]
++    std::vector<uint64_t> slice;           // [n_layers*3]
++    bool                  seen_topk = false;
++    std::vector<uint8_t>  ids_host;
++    std::vector<char>     incore;
++    std::vector<uint8_t>  scratch;
++    // stats
++    uint64_t              n_reads = 0, n_bytes = 0, n_skipped = 0;
++
++    ~mbolt_prefetch_state() {
++        if (ok) {
++            LOG_INF("mbolt-prefetch: %llu reads, %.2f GB read, %llu slices already resident\n",
++                    (unsigned long long) n_reads, n_bytes / 1e9, (unsigned long long) n_skipped);
++        }
++    }
++};
++
++mbolt_prefetch_state g_pf;
++
++bool mbolt_prefetch_lazy_init() {
++    if (g_pf.tried_init) {
++        return g_pf.ok;
++    }
++    g_pf.tried_init = true;
++
++    FILE * f = fopen(g_pf.sidecar.c_str(), "rb");
++    if (!f) {
++        LOG_ERR("mbolt-prefetch: cannot open sidecar '%s'\n", g_pf.sidecar.c_str());
++        return false;
++    }
++    uint32_t hdr[6];
++    if (fread(hdr, sizeof(uint32_t), 6, f) != 6 || hdr[0] != 0x4650424Du /*MBPF*/ || hdr[1] != 1) {
++        LOG_ERR("mbolt-prefetch: bad sidecar header\n");
++        fclose(f);
++        return false;
++    }
++    g_pf.n_layers      = hdr[2];
++    g_pf.n_expert      = hdr[3];
++    g_pf.n_expert_used = hdr[4];
++    std::string model_path(hdr[5], '\0');
++    if (fread(model_path.data(), 1, hdr[5], f) != hdr[5]) {
++        fclose(f);
++        return false;
++    }
++    g_pf.base.resize((size_t) g_pf.n_layers * 3);
++    g_pf.slice.resize((size_t) g_pf.n_layers * 3);
++    for (size_t i = 0; i < (size_t) g_pf.n_layers * 3; ++i) {
++        uint64_t e[2];
++        if (fread(e, sizeof(uint64_t), 2, f) != 2) {
++            fclose(f);
++            return false;
++        }
++        g_pf.base[i]  = e[0];
++        g_pf.slice[i] = e[1];
++    }
++    fclose(f);
++
++    g_pf.fd = open(model_path.c_str(), O_RDONLY);
++    if (g_pf.fd < 0) {
++        LOG_ERR("mbolt-prefetch: cannot open model '%s'\n", model_path.c_str());
++        return false;
++    }
++    struct stat st;
++    fstat(g_pf.fd, &st);
++    g_pf.file_size = (size_t) st.st_size;
++    g_pf.map = (uint8_t *) mmap(nullptr, g_pf.file_size, PROT_READ, MAP_SHARED, g_pf.fd, 0);
++    if (g_pf.map == MAP_FAILED) {
++        g_pf.map = nullptr; // mincore check disabled; prefetch still works
++    }
++    g_pf.page = (size_t) getpagesize();
++    g_pf.scratch.resize(8u << 20);
++    g_pf.incore.resize(1 << 12);
++    g_pf.ok = true;
++    LOG_INF("mbolt-prefetch: active - %u layers x %u experts (top-%u), model '%s'\n",
++            g_pf.n_layers, g_pf.n_expert, g_pf.n_expert_used, model_path.c_str());
++    return true;
++}
++
++bool mbolt_range_resident(uint64_t off, uint64_t len) {
++    if (!g_pf.map) {
++        return false;
++    }
++    uint64_t a0 = off & ~((uint64_t) g_pf.page - 1);
++    uint64_t a1 = (off + len + g_pf.page - 1) & ~((uint64_t) g_pf.page - 1);
++    size_t   np = (a1 - a0) / g_pf.page;
++    if (np > g_pf.incore.size()) {
++        g_pf.incore.resize(np);
++    }
++    if (mincore(g_pf.map + a0, a1 - a0, g_pf.incore.data()) != 0) {
++        return false;
++    }
++    for (size_t i = 0; i < np; ++i) {
++        if (!(g_pf.incore[i] & 1)) {
++            return false;
++        }
++    }
++    return true;
++}
++
++void mbolt_prefetch_layer(uint32_t layer, const int32_t * ids, uint32_t k, uint32_t n_tokens, size_t stride0, size_t stride1) {
++    // unique experts across the batch
++    std::vector<int32_t> uniq;
++    uniq.reserve((size_t) k * n_tokens);
++    for (uint32_t t = 0; t < n_tokens; ++t) {
++        for (uint32_t j = 0; j < k; ++j) {
++            uniq.push_back(*(const int32_t *) ((const uint8_t *) ids + t * stride1 + j * stride0));
++        }
++    }
++    std::sort(uniq.begin(), uniq.end());
++    uniq.erase(std::unique(uniq.begin(), uniq.end()), uniq.end());
++
++    // collect non-resident slice ranges for the 3 expert tensors of this layer
++    std::vector<std::pair<uint64_t, uint64_t>> ranges;
++    for (int kind = 0; kind < 3; ++kind) {
++        const uint64_t base  = g_pf.base[(size_t) layer * 3 + kind];
++        const uint64_t sl    = g_pf.slice[(size_t) layer * 3 + kind];
++        for (int32_t e : uniq) {
++            if (e < 0 || (uint32_t) e >= g_pf.n_expert) {
++                continue;
++            }
++            const uint64_t off = base + (uint64_t) e * sl;
++            if (mbolt_range_resident(off, sl)) {
++                g_pf.n_skipped++;
++                continue;
++            }
++            ranges.emplace_back(off, sl);
++        }
++    }
++    if (ranges.empty()) {
++        return;
++    }
++    std::sort(ranges.begin(), ranges.end());
++
++    // merge ranges with small gaps, then pread each merged span (populates the
++    // unified page cache; the expert matmul's mmap faults then hit warm pages)
++    const uint64_t merge_gap = 256 * 1024;
++    uint64_t cur_off = ranges[0].first, cur_end = ranges[0].first + ranges[0].second;
++    auto flush = [&]() {
++        uint64_t off = cur_off;
++        while (off < cur_end) {
++            size_t chunk = std::min((uint64_t) g_pf.scratch.size(), cur_end - off);
++            ssize_t got = pread(g_pf.fd, g_pf.scratch.data(), chunk, (off_t) off);
++            if (got <= 0) {
++                break;
++            }
++            off += (uint64_t) got;
++            g_pf.n_bytes += (uint64_t) got;
++        }
++        g_pf.n_reads++;
++    };
++    for (size_t i = 1; i < ranges.size(); ++i) {
++        if (ranges[i].first <= cur_end + merge_gap) {
++            cur_end = std::max(cur_end, ranges[i].first + ranges[i].second);
++        } else {
++            flush();
++            cur_off = ranges[i].first;
++            cur_end = ranges[i].first + ranges[i].second;
++        }
++    }
++    flush();
++}
++
++// ---------------- shared node matching ----------------
++
 +bool mbolt_is_moe_ids_node(const struct ggml_tensor * t) {
 +    if (t->op != GGML_OP_MUL_MAT_ID) {
 +        return false;
@@ -82,30 +275,83 @@ index 0000000..c54358d
 +           strncmp(t->name, "ffn_moe_gate_up-", 16) == 0;
 +}
 +
++bool mbolt_is_topk_node(const struct ggml_tensor * t) {
++    return strncmp(t->name, "ffn_moe_topk-", 13) == 0;
++}
++
++bool mbolt_is_argsort_node(const struct ggml_tensor * t) {
++    return strncmp(t->name, "ffn_moe_argsort-", 16) == 0;
++}
++
++uint32_t mbolt_layer_from_name(const char * name) {
++    const char * dash = strrchr(name, '-');
++    return dash ? (uint32_t) atoi(dash + 1) : UINT32_MAX;
++}
++
 +} // namespace
 +
 +void mbolt_trace_init(const char * path) {
 +    g_mbolt.path = path;
 +}
 +
++void mbolt_prefetch_init(const char * sidecar_path) {
++    g_pf.sidecar = sidecar_path;
++}
++
 +bool mbolt_trace_cb_eval(struct ggml_tensor * t, bool ask, void * user_data) {
 +    (void) user_data;
 +
++    const bool trace_on    = !g_mbolt.path.empty();
++    const bool prefetch_on = !g_pf.sidecar.empty();
++
 +    if (ask) {
-+        return mbolt_is_moe_ids_node(t);
++        if (trace_on && mbolt_is_moe_ids_node(t)) {
++            return true;
++        }
++        if (prefetch_on && (mbolt_is_topk_node(t) || mbolt_is_argsort_node(t))) {
++            return true;
++        }
++        return false;
 +    }
 +
-+    if (!mbolt_is_moe_ids_node(t)) {
++    // ---- prefetch path: fires when the router's selection is computed ----
++    if (prefetch_on && (mbolt_is_topk_node(t) || mbolt_is_argsort_node(t))) {
++        std::lock_guard<std::mutex> lock(g_pf.mtx);
++        if (mbolt_prefetch_lazy_init() && t->type == GGML_TYPE_I32) {
++            const bool is_topk = mbolt_is_topk_node(t);
++            if (is_topk) {
++                g_pf.seen_topk = true;
++            }
++            // if topk views fire, ignore the redundant argsort nodes
++            if (is_topk || !g_pf.seen_topk) {
++                const uint32_t layer    = mbolt_layer_from_name(t->name);
++                const uint32_t k        = is_topk ? (uint32_t) t->ne[0]
++                                                  : std::min<uint32_t>(g_pf.n_expert_used, (uint32_t) t->ne[0]);
++                const uint32_t n_tokens = (uint32_t) t->ne[1];
++                if (layer < g_pf.n_layers && k > 0) {
++                    g_pf.ids_host.resize(ggml_nbytes(t));
++                    ggml_backend_tensor_get(t, g_pf.ids_host.data(), 0, ggml_nbytes(t));
++                    mbolt_prefetch_layer(layer, (const int32_t *) g_pf.ids_host.data(), k, n_tokens,
++                                         t->nb[0], t->nb[1]);
++                }
++            }
++        }
++        if (!(trace_on && mbolt_is_moe_ids_node(t))) {
++            return true;
++        }
++    }
++
++    if (!trace_on || !mbolt_is_moe_ids_node(t)) {
 +        return true;
 +    }
 +
++    // ---- trace path ----
 +    const struct ggml_tensor * ids = t->src[2];
 +    if (ids == nullptr || ids->type != GGML_TYPE_I32) {
 +        return true;
 +    }
 +
-+    const char *   dash     = strrchr(t->name, '-');
-+    const uint32_t layer    = dash ? (uint32_t) atoi(dash + 1) : UINT32_MAX;
++    const uint32_t layer    = mbolt_layer_from_name(t->name);
 +    const uint32_t k        = (uint32_t) ids->ne[0];
 +    const uint32_t n_tokens = (uint32_t) ids->ne[1];
 +
@@ -156,21 +402,32 @@ index 0000000..c54358d
 +}
 diff --git a/common/mbolt-trace.h b/common/mbolt-trace.h
 new file mode 100644
-index 0000000..15bea72
+index 0000000..ff7dcbc
 --- /dev/null
 +++ b/common/mbolt-trace.h
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,25 @@
 +#pragma once
 +
-+// mbolt: env-gated MoE routing trace (MBOLT_TRACE=<path>)
-+// Captures the top-k expert ids selected per token per layer by observing the
-+// ids tensor (src[2]) of the per-layer expert MUL_MAT_ID node.
++// mbolt: env-gated MoE routing tools sharing one eval callback.
 +//
-+// Binary format (little-endian):
-+//   header: uint32 magic "MBLT", uint32 version=1, uint32 n_expert
-+//   record: uint32 layer, uint32 k, uint32 n_tokens, int32 ids[n_tokens*k] (token-major)
++// MBOLT_TRACE=<path>    log per-token top-k expert ids per layer.
++//   Binary format (little-endian):
++//     header: uint32 magic "MBLT", uint32 version=1, uint32 n_expert
++//     record: uint32 layer, uint32 k, uint32 n_tokens, int32 ids[n_tokens*k] (token-major)
++//
++// MBOLT_PREFETCH=<sidecar> explicit-read expert prefetcher: when the router's
++//   top-k ids are computed (a few graph nodes before the expert matmuls), the
++//   selected experts' file slices are pread() into the unified page cache as
++//   sorted, merged ranges - so the matmul's mmap faults hit warm pages. On a
++//   co-activation-ordered (mbolt) file the merged ranges collapse into few
++//   large sequential reads. Sidecar from `mbolt-sim prefetch-map`:
++//     header: uint32 magic "MBPF", uint32 version=1,
++//             uint32 n_layers, uint32 n_expert, uint32 n_expert_used,
++//             uint32 model_path_len, char model_path[]
++//     per layer, 3 entries (up|gate|down): uint64 base_offset, uint64 slice_bytes
 +
 +struct ggml_tensor;
 +
 +void mbolt_trace_init(const char * path);
++void mbolt_prefetch_init(const char * sidecar_path);
 +bool mbolt_trace_cb_eval(struct ggml_tensor * t, bool ask, void * user_data);

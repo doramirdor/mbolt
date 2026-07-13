@@ -39,29 +39,32 @@ ax.set_title("what moving bytes buys: expert-read I/O floor\n"
 ax.set_ylim(0, max(toks) * 1.3)
 ax.grid(axis="y", alpha=0.3)
 
-# ---- Panel 2: llama.cpp end-to-end today ----
+# ---- Panel 2: llama.cpp end-to-end, stock vs MBOLT_PREFETCH ----
 ax = axes[1]
-groups = ["llama.cpp today\n(CPU ngl=0, mmap faults, squeezed)"]
-orig_vals = [np.median([12.2, 11.1])]
-mb_vals = [np.median([11.2, 11.4])]
+groups = ["stock llama.cpp\n(mmap faults)", "+ MBOLT_PREFETCH\n(explicit merged reads)"]
+orig_vals = [10.0, 11.3]   # medians, 3 reps, CPU ngl=0, 24GB mlocked squeeze
+mb_vals = [10.1, 11.5]
 x = np.arange(len(groups))
-w = 0.28
-ax.bar(x - w / 2, orig_vals, w, label="original", color="#8c8c8c")
-ax.bar(x + w / 2, mb_vals, w, label="mbolt", color="#2c7fb8")
+w = 0.34
+ax.bar(x - w / 2, orig_vals, w, label="original file", color="#8c8c8c")
+ax.bar(x + w / 2, mb_vals, w, label="mbolt file", color="#2c7fb8")
 for xi, v in zip(x - w / 2, orig_vals):
-    ax.text(xi, v + 0.3, f"{v:.1f}", ha="center", fontsize=9)
+    ax.text(xi, v + 0.25, f"{v:.1f}", ha="center", fontsize=9)
 for xi, v in zip(x + w / 2, mb_vals):
-    ax.text(xi, v + 0.3, f"{v:.1f}", ha="center", fontsize=9)
+    ax.text(xi, v + 0.25, f"{v:.1f}", ha="center", fontsize=9)
 ax.axhline(23.8, ls="--", color="#666", lw=1)
-ax.text(0.02, 24.1, "cached compute ceiling 23.8 tok/s (runs 24.0/23.6)", fontsize=8, color="#555")
+ax.text(-0.4, 24.2, "cached compute ceiling 23.8 tok/s", fontsize=8, color="#555")
+ax.annotate("+14%", xy=(1 + w / 2, 11.5), xytext=(1.28, 14.5), fontsize=11,
+            color="#2c7fb8", fontweight="bold",
+            arrowprops=dict(arrowstyle="->", color="#2c7fb8"))
 ax.set_xticks(x, groups, fontsize=9)
 ax.set_ylim(0, 27)
-ax.set_ylabel("end-to-end decode tok/s")
-ax.set_title("llama.cpp end-to-end today (CPU mode): parity\n"
-             "mmap fault streaming is layout-blind (inferred; equal pageins) -\n"
-             "explicit slice reads needed to harvest. Metal e2e excluded:\n"
-             "stock file was not streaming (pageins 2x file; see report §4)", fontsize=9)
-ax.legend(fontsize=9)
+ax.set_ylabel("end-to-end decode tok/s (CPU ngl=0, squeezed)")
+ax.set_title("llama.cpp end-to-end: fault streaming is layout-blind;\n"
+             "the mbolt prefetcher lifts both files +13-14% (full stack 1.15x).\n"
+             "Layout cuts read ops 21% in-engine; tok/s conversion awaits\n"
+             "storage-bound hardware or async prefetch (report SS4b)", fontsize=9)
+ax.legend(fontsize=9, loc="upper left")
 ax.grid(axis="y", alpha=0.3)
 
 # ---- Panel 3: replay speedups across regimes/models ----

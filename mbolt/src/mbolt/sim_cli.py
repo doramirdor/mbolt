@@ -176,6 +176,29 @@ def cmd_evict(args):
     ensure_cold(args.model, args.ceiling)
 
 
+def cmd_prefetch_map(args):
+    """Emit the MBOLT_PREFETCH sidecar: expert tensor offsets for the C++
+    prefetcher (magic MBPF v1; see llama.cpp common/mbolt-trace.h)."""
+    import struct
+
+    from gguf import GGUFReader
+
+    mm = load_model_map(args.model)
+    reader = GGUFReader(args.model)
+    arch = reader.get_field("general.architecture").contents()
+    k = int(reader.get_field(f"{arch}.expert_used_count").contents())
+    model_path = os.path.abspath(args.model).encode()
+
+    with open(args.output, "wb") as f:
+        f.write(struct.pack("<6I", 0x4650424D, 1, mm.n_layers, mm.n_experts, k, len(model_path)))
+        f.write(model_path)
+        for layer in range(mm.n_layers):
+            for kind in ("up", "gate", "down"):
+                et = mm.experts[(layer, kind)]
+                f.write(struct.pack("<2Q", et.rec.offset, et.slice_bytes))
+    print(f"wrote {args.output}: {mm.n_layers} layers x {mm.n_experts} experts (top-{k})")
+
+
 def cmd_gate(args):
     mm = load_model_map(args.model)
     t = read_trace(args.trace)
@@ -295,6 +318,11 @@ def main():
     p.add_argument("model")
     p.add_argument("--ceiling", type=float, default=6500.0)
     p.set_defaults(func=cmd_evict)
+
+    p = sub.add_parser("prefetch-map")
+    p.add_argument("model")
+    p.add_argument("-o", "--output", required=True)
+    p.set_defaults(func=cmd_prefetch_map)
 
     p = sub.add_parser("gate")
     p.add_argument("model")

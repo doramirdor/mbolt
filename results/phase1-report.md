@@ -53,6 +53,21 @@ Root cause (inferred, not directly instrumented): llama.cpp's mmap path demand-p
 
 **The simulator "mispredicted" E2E, and that is the finding the spec anticipated:** the sim models an explicit-read streaming engine (sorted, merged slice reads — what colibri-class engines do); llama.cpp's mmap path is not that engine. Layout gains are harvestable by (a) explicit-read expert streaming (colibri port — Phase 2), (b) a llama.cpp streaming patch that reads missing expert slices explicitly instead of faulting, or (c) any engine adopting the `mbolt.*` metadata (tier hints + permutations ship in the file).
 
+### 4b. The harvest experiment: MBOLT_PREFETCH
+
+We built (b): an env-gated explicit-read prefetcher inside the same eval-callback patch (`MBOLT_PREFETCH=<sidecar>`; sidecar from `mbolt-sim prefetch-map`). When the router's top-k ids are computed — a few graph nodes before the expert matmuls — it `pread()`s the selected experts' non-resident slices (mincore-checked) as sorted, gap-merged ranges into the unified page cache, so the matmul's faults hit warm pages.
+
+Measured (80B, CPU mode, 24 GB mlocked squeeze, 3 reps, alternating):
+
+| config | median tok/s |
+|---|---|
+| stock file, stock llama.cpp | 10.00 |
+| stock file + prefetcher | 11.30 (**+13 %**) |
+| mbolt file, stock llama.cpp | 10.10 |
+| mbolt file + prefetcher | 11.50 (**+14 %**; full stack vs stock/stock: **1.15×**) |
+
+The **prefetcher itself is the bigger E2E lever on this machine** — explicit merged reads beat page-faulting on both layouts. The layout's contribution is visible in the engine's own I/O counters — cold decode issues **21 % fewer read ops** on the mbolt file (7,730 vs 9,799 per 32 tokens, avg read 527 KB vs 460 KB), matching the replay prediction — but converts to only ~2 % tok/s here because this machine is not storage-bound: compute is ~42 ms/token (23.8 tok/s cached ceiling) and the AP1024Z sustains ~3.5 GB/s on the miss stream, so I/O ≈ 38 ms/token even stock. Where storage is the binding constraint (slower drives, tighter memory, model ≫ RAM), the same read-op reduction is the 1.25× measured at the I/O floor. A natural next step is making the prefetch asynchronous (overlap I/O with the previous layer's compute) — on this workload perfect overlap would nearly hide I/O entirely.
+
 ## 5. Honesty ledger
 
 - Every number above: pressure-evicted and probed before each run (`purge` needs sudo); under the 24 GB mlock the E2E probes showed a 9–16 GB file-backed residual rather than full coldness — reported as-is. Replay numbers passed the cold-probe check against device baseline. N runs listed, held-out trace, same-window ratios. Machine and drive named. Single machine only — the spec's 2-machine protocol was not satisfiable here.
