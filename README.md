@@ -7,7 +7,9 @@
   <img src="https://img.shields.io/badge/status-research%20%E2%86%92%20adoption-e6b325" alt="status">
 </p>
 
-<h3 align="center">Rewrite your MoE model file around how it's actually used.<br>1.63× faster streaming — zero weight changes, +0.003% size.</h3>
+# mbolt — profile-guided layout optimization for MoE model files
+
+<h3 align="center">Same model, same RAM, 2.23× fewer disk reads.<br>MoE experts fire in cliques; the stock file scatters them. mbolt rewrites the layout around your real routing trace.<br>1,418 → 370 reads per token. Pure profile-guided, weights byte-exact.</h3>
 
 ---
 
