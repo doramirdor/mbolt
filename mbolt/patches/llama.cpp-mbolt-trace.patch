@@ -47,10 +47,10 @@ index 8f13217..de799a7 100644
      llama_model * model = res->model();
 diff --git a/common/mbolt-trace.cpp b/common/mbolt-trace.cpp
 new file mode 100644
-index 0000000..b9d6c91
+index 0000000..e740398
 --- /dev/null
 +++ b/common/mbolt-trace.cpp
-@@ -0,0 +1,349 @@
+@@ -0,0 +1,357 @@
 +#include "mbolt-trace.h"
 +
 +#include "log.h"
@@ -102,8 +102,10 @@ index 0000000..b9d6c91
 +    uint32_t              n_layers = 0;
 +    uint32_t              n_expert = 0;
 +    uint32_t              n_expert_used = 0;
-+    std::vector<uint64_t> base;            // [n_layers*3]
-+    std::vector<uint64_t> slice;           // [n_layers*3]
++    uint32_t              n_entries = 3;   // ranges per layer (1 = interleaved blob)
++    std::vector<uint64_t> base;            // [n_layers*n_entries]
++    std::vector<uint64_t> slice;           // bytes to read per expert
++    std::vector<uint64_t> stride;          // byte distance between experts
 +    bool                  seen_topk = false;
 +    std::vector<uint8_t>  ids_host;
 +    std::vector<char>     incore;
@@ -132,30 +134,34 @@ index 0000000..b9d6c91
 +        LOG_ERR("mbolt-prefetch: cannot open sidecar '%s'\n", g_pf.sidecar.c_str());
 +        return false;
 +    }
-+    uint32_t hdr[6];
-+    if (fread(hdr, sizeof(uint32_t), 6, f) != 6 || hdr[0] != 0x4650424Du /*MBPF*/ || hdr[1] != 1) {
-+        LOG_ERR("mbolt-prefetch: bad sidecar header\n");
++    uint32_t hdr[7];
++    if (fread(hdr, sizeof(uint32_t), 7, f) != 7 || hdr[0] != 0x4650424Du /*MBPF*/ || hdr[1] != 2) {
++        LOG_ERR("mbolt-prefetch: bad sidecar header (regenerate with mbolt-sim prefetch-map)\n");
 +        fclose(f);
 +        return false;
 +    }
 +    g_pf.n_layers      = hdr[2];
 +    g_pf.n_expert      = hdr[3];
 +    g_pf.n_expert_used = hdr[4];
-+    std::string model_path(hdr[5], '\0');
-+    if (fread(model_path.data(), 1, hdr[5], f) != hdr[5]) {
++    g_pf.n_entries     = hdr[5];
++    std::string model_path(hdr[6], '\0');
++    if (fread(model_path.data(), 1, hdr[6], f) != hdr[6]) {
 +        fclose(f);
 +        return false;
 +    }
-+    g_pf.base.resize((size_t) g_pf.n_layers * 3);
-+    g_pf.slice.resize((size_t) g_pf.n_layers * 3);
-+    for (size_t i = 0; i < (size_t) g_pf.n_layers * 3; ++i) {
-+        uint64_t e[2];
-+        if (fread(e, sizeof(uint64_t), 2, f) != 2) {
++    const size_t total = (size_t) g_pf.n_layers * g_pf.n_entries;
++    g_pf.base.resize(total);
++    g_pf.slice.resize(total);
++    g_pf.stride.resize(total);
++    for (size_t i = 0; i < total; ++i) {
++        uint64_t e[3];
++        if (fread(e, sizeof(uint64_t), 3, f) != 3) {
 +            fclose(f);
 +            return false;
 +        }
-+        g_pf.base[i]  = e[0];
-+        g_pf.slice[i] = e[1];
++        g_pf.base[i]   = e[0];
++        g_pf.slice[i]  = e[1];
++        g_pf.stride[i] = e[2];
 +    }
 +    fclose(f);
 +
@@ -213,16 +219,18 @@ index 0000000..b9d6c91
 +    std::sort(uniq.begin(), uniq.end());
 +    uniq.erase(std::unique(uniq.begin(), uniq.end()), uniq.end());
 +
-+    // collect non-resident slice ranges for the 3 expert tensors of this layer
++    // collect non-resident slice ranges for this layer's expert data
 +    std::vector<std::pair<uint64_t, uint64_t>> ranges;
-+    for (int kind = 0; kind < 3; ++kind) {
-+        const uint64_t base  = g_pf.base[(size_t) layer * 3 + kind];
-+        const uint64_t sl    = g_pf.slice[(size_t) layer * 3 + kind];
++    for (uint32_t kind = 0; kind < g_pf.n_entries; ++kind) {
++        const size_t   i    = (size_t) layer * g_pf.n_entries + kind;
++        const uint64_t base = g_pf.base[i];
++        const uint64_t sl   = g_pf.slice[i];
++        const uint64_t st   = g_pf.stride[i];
 +        for (int32_t e : uniq) {
 +            if (e < 0 || (uint32_t) e >= g_pf.n_expert) {
 +                continue;
 +            }
-+            const uint64_t off = base + (uint64_t) e * sl;
++            const uint64_t off = base + (uint64_t) e * st;
 +            if (mbolt_range_resident(off, sl)) {
 +                g_pf.n_skipped++;
 +                continue;
@@ -431,3 +439,175 @@ index 0000000..ff7dcbc
 +void mbolt_trace_init(const char * path);
 +void mbolt_prefetch_init(const char * sidecar_path);
 +bool mbolt_trace_cb_eval(struct ggml_tensor * t, bool ask, void * user_data);
+diff --git a/ggml/src/ggml-metal/ggml-metal.cpp b/ggml/src/ggml-metal/ggml-metal.cpp
+index a1003b3..1f5c0d4 100644
+--- a/ggml/src/ggml-metal/ggml-metal.cpp
++++ b/ggml/src/ggml-metal/ggml-metal.cpp
+@@ -757,6 +757,12 @@ static int64_t get_op_batch_size(const ggml_tensor * op) {
+ static bool ggml_backend_metal_device_offload_op(ggml_backend_dev_t dev, const ggml_tensor * op) {
+     ggml_metal_device_t ctx_dev = (ggml_metal_device_t)dev->context;
+ 
++    // mbolt: offloading copies src0 to the device as a contiguous tensor;
++    // strided weight views (interleaved expert layouts) must stay put
++    if (op->src[0] && !ggml_is_contiguous(op->src[0])) {
++        return false;
++    }
++
+     return (op->op == GGML_OP_MUL_MAT ||
+             op->op == GGML_OP_MUL_MAT_ID) &&
+             get_op_batch_size(op) >= ggml_metal_device_get_props(ctx_dev)->op_offload_min_batch_size;
+diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
+index 28f8bb7..5421ba4 100644
+--- a/src/llama-model-loader.cpp
++++ b/src/llama-model-loader.cpp
+@@ -704,6 +704,9 @@ llama_model_loader::llama_model_loader(
+         llm_kv = LLM_KV(llm_arch_from_string(arch_name));
+     }
+ 
++    // mbolt: reconstruct interleaved expert tensors as strided views
++    mbolt_expand_interleaved();
++
+     n_kv      = gguf_get_n_kv(metadata);
+     n_tensors = weights_map.size();
+ 
+@@ -868,6 +871,78 @@ struct ggml_tensor * llama_model_loader::require_tensor_meta(const std::string &
+     return tensor;
+ }
+ 
++// mbolt: models rewritten with `mbolt --layout interleave` store each MoE
++// layer's experts as one blob (blk.N.ffn_ilv_exps.weight) where expert e's
++// up|gate|down slices are adjacent - one contiguous read per streamed expert.
++// This reconstructs the three ffn_{up,gate,down}_exps tensors as views into
++// the blob with a custom expert stride (nb[2]); mul_mat_id addresses experts
++// via nb[2], so compute is unchanged. Unpatched llama.cpp fails cleanly on
++// the missing ffn_*_exps names.
++void llama_model_loader::mbolt_expand_interleaved() {
++    const int64_t kid = gguf_find_key(metadata, "mbolt.interleaved");
++    if (kid < 0 || gguf_get_kv_type(metadata, kid) != GGUF_TYPE_BOOL || !gguf_get_val_bool(metadata, kid)) {
++        return;
++    }
++    const int64_t ktype = gguf_find_key(metadata, "mbolt.ilv.type");
++    const int64_t kne0  = gguf_find_key(metadata, "mbolt.ilv.ne0");
++    const int64_t kne1  = gguf_find_key(metadata, "mbolt.ilv.ne1");
++    if (ktype < 0 || kne0 < 0 || kne1 < 0) {
++        throw std::runtime_error("mbolt.interleaved model is missing mbolt.ilv.* metadata");
++    }
++    const uint32_t * types = (const uint32_t *) gguf_get_arr_data(metadata, ktype);
++    const uint32_t * ne0s  = (const uint32_t *) gguf_get_arr_data(metadata, kne0);
++    const uint32_t * ne1s  = (const uint32_t *) gguf_get_arr_data(metadata, kne1);
++    const size_t n_entries = gguf_get_arr_n(metadata, ktype);
++    const size_t n_layers  = n_entries / 3;
++
++    const ggml_init_params ip = {
++        /*.mem_size   =*/ ggml_tensor_overhead() * (n_entries + 1),
++        /*.mem_buffer =*/ nullptr,
++        /*.no_alloc   =*/ true,
++    };
++    mbolt_ctx.reset(ggml_init(ip));
++
++    static const char * kinds[3] = { "up", "gate", "down" };
++    size_t n_synth = 0;
++    for (size_t il = 0; il < n_layers; ++il) {
++        const std::string ilv_name = format("blk.%zu.ffn_ilv_exps.weight", il);
++        const auto it = weights_map.find(ilv_name);
++        if (it == weights_map.end()) {
++            continue;
++        }
++        const llama_tensor_weight w = it->second;
++
++        uint64_t slice[3];
++        uint64_t stride = 0;
++        for (int k = 0; k < 3; ++k) {
++            const ggml_type t = (ggml_type) types[il*3 + k];
++            slice[k] = ggml_row_size(t, ne0s[il*3 + k]) * ne1s[il*3 + k];
++            stride  += slice[k];
++        }
++        const uint64_t region = ggml_nbytes(w.tensor);
++        GGML_ASSERT(stride > 0 && region % stride == 0);
++        const int64_t n_expert = (int64_t) (region / stride);
++
++        uint64_t kind_off = 0;
++        for (int k = 0; k < 3; ++k) {
++            const ggml_type t = (ggml_type) types[il*3 + k];
++            ggml_tensor * v = ggml_new_tensor_3d(mbolt_ctx.get(), t, ne0s[il*3 + k], ne1s[il*3 + k], n_expert);
++            v->nb[2] = stride;
++            v->nb[3] = stride * (uint64_t) n_expert;
++            const std::string vname = format("blk.%zu.ffn_%s_exps.weight", il, kinds[k]);
++            ggml_set_name(v, vname.c_str());
++            weights_map.emplace(vname, llama_tensor_weight(files.at(w.idx).get(), w.idx, w.offs + kind_off, v));
++            kind_off += slice[k];
++            n_synth++;
++        }
++        weights_map.erase(ilv_name);
++    }
++    if (n_synth > 0) {
++        LLAMA_LOG_INFO("%s: mbolt interleaved layout - reconstructed %zu expert tensors as strided views\n",
++                       __func__, n_synth);
++    }
++}
++
+ const struct ggml_tensor * llama_model_loader::check_tensor_dims(const std::string & name, const std::vector<int64_t> & ne, bool required) const {
+     const struct ggml_tensor * cur = get_tensor_meta(name.c_str());
+ 
+@@ -1216,6 +1291,16 @@ struct ggml_tensor * llama_model_loader::create_tensor(
+             n_tensors_moved++;
+         }
+ 
++        // mbolt: interleaved strided views are supported on CPU only for now
++        if (!ggml_is_contiguous(t_meta)) {
++            auto * dev = ggml_backend_buft_get_device(buft);
++            if (dev && ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_CPU) {
++                throw std::runtime_error(format(
++                    "tensor %s is an mbolt interleaved view and must stay on CPU - "
++                    "run with -ot \"\\.ffn_.*_exps\\.=CPU\" or -ngl 0", tn.str().c_str()));
++            }
++        }
++
+         return buft;
+     };
+ 
+@@ -1284,6 +1369,12 @@ struct ggml_tensor * llama_model_loader::create_tensor(
+     struct ggml_tensor * tensor = ggml_dup_tensor(ctx, cur);
+     ggml_set_name(tensor, ggml_get_name(cur));
+ 
++    // mbolt: ggml_dup_tensor recomputes contiguous strides - preserve the
++    // custom expert stride of synthesized interleaved views
++    if (!ggml_is_contiguous(cur)) {
++        memcpy(tensor->nb, cur->nb, sizeof(tensor->nb));
++    }
++
+     if (duplicated) {
+         size_data += ggml_nbytes(cur);
+     } else {
+diff --git a/src/llama-model-loader.h b/src/llama-model-loader.h
+index c476026..940acdb 100644
+--- a/src/llama-model-loader.h
++++ b/src/llama-model-loader.h
+@@ -47,6 +47,14 @@ struct llama_model_loader {
+                 throw std::runtime_error(format("tensor '%s' data is not within the file bounds, model is corrupted or incomplete", ggml_get_name(tensor)));
+             }
+         }
++
++        // mbolt: synthetic weight entry - a (possibly strided) view at an
++        // explicit file offset, not present in the gguf tensor table
++        llama_tensor_weight(const llama_file * file, uint16_t idx, size_t offs, ggml_tensor * tensor) : idx(idx), offs(offs), tensor(tensor) {
++            if (offs + ggml_nbytes(tensor) < offs || offs + ggml_nbytes(tensor) > file->size()) {
++                throw std::runtime_error(format("tensor '%s' data is not within the file bounds, model is corrupted or incomplete", ggml_get_name(tensor)));
++            }
++        }
+     };
+ 
+     // custom comparator to sort weights more nicely by layer
+@@ -96,6 +104,12 @@ struct llama_model_loader {
+     void * set_tensor_data_ud;
+     std::vector<ggml_context_ptr> contexts;
+ 
++    // mbolt: holds synthesized strided-view tensor metas for interleaved
++    // expert layouts (mbolt.interleaved KV); see mbolt_expand_interleaved()
++    ggml_context_ptr mbolt_ctx;
++
++    void mbolt_expand_interleaved();
++
+     std::string arch_name;
+     LLM_KV      llm_kv    = LLM_KV(LLM_ARCH_UNKNOWN);
+ 

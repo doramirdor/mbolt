@@ -22,13 +22,13 @@ def main():
     ap.add_argument("perms", help="perms.json from mbolt-sim cluster")
     ap.add_argument("-o", "--output", required=True)
     ap.add_argument("--layout", default="chain+pipeline",
-                    choices=["chain+pipeline", "chain", "clique+pipeline", "clique", "heat"])
+                    choices=["chain+pipeline", "chain", "clique+pipeline", "clique", "heat", "interleave"])
     args = ap.parse_args()
 
     doc = json.load(open(args.perms))
     key = {"chain+pipeline": "chain_perm", "chain": "chain_perm",
            "clique+pipeline": "clique_perm", "clique": "clique_perm",
-           "heat": "heat_perm"}[args.layout]
+           "heat": "heat_perm", "interleave": "chain_perm"}[args.layout]
     perms = [l[key] for l in doc["layers"]]
     heat = [l["heat"] for l in doc["layers"]]
     cliques = [l["top_cliques"] for l in doc["layers"]]
@@ -36,7 +36,8 @@ def main():
 
     t0 = time.time()
     stats = rewrite(args.model, args.output, perms, heat=heat, top_cliques=cliques,
-                    layout_name=args.layout, pack_pipeline=pack)
+                    layout_name=args.layout, pack_pipeline=pack,
+                    interleave=(args.layout == "interleave"))
     dt = time.time() - t0
     src, dst = os.path.getsize(args.model), os.path.getsize(args.output)
     print(f"rewrote {stats['tensors']} tensors "

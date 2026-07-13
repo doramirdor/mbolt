@@ -58,6 +58,7 @@ def rewrite(
     top_cliques: list[list[list[int]]] | None = None,
     layout_name: str = "chain+pipeline",
     pack_pipeline: bool = True,
+    interleave: bool = False,
 ) -> dict:
     reader = GGUFReader(src_path)
 
@@ -109,6 +110,8 @@ def rewrite(
     if top_cliques is not None:
         writer.add_key_value("mbolt.coactivation_top_cliques", json.dumps(top_cliques),
                              GGUFValueType.STRING)
+    if interleave:
+        writer.add_key_value("mbolt.interleaved", True, GGUFValueType.BOOL)
 
     # ---- classify tensors ----
     exps: dict[tuple[int, str], object] = {}
@@ -133,9 +136,29 @@ def rewrite(
 
     assert len(exps) == n_layers * 3, f"expected {n_layers * 3} expert tensors, found {len(exps)}"
 
-    # ---- emit order: pipeline packing or original order ----
-    plan: list[tuple[object, np.ndarray | None, str]] = []  # (tensor, perm|None, mode)
-    if pack_pipeline:
+    # ---- emit order: interleave, pipeline packing, or original order ----
+    plan: list[tuple[object, np.ndarray | None, str]] = []  # (tensor|layer, perm|None, mode)
+    if interleave:
+        # per layer one blob: expert e's up|gate|down slices adjacent, chain order.
+        # loader reconstructs the three tensors as strided views (llama.cpp patch,
+        # gated on mbolt.interleaved; stock llama.cpp refuses cleanly on the
+        # missing ffn_*_exps names)
+        types, ne0s, ne1s = [], [], []
+        for layer in range(n_layers):
+            for kind in ("up", "gate", "down"):
+                t = exps[(layer, kind)]
+                types.append(int(t.tensor_type))
+                ne0s.append(int(t.shape[0]))
+                ne1s.append(int(t.shape[1]))
+            plan.append((layer, perms_np[layer], "ilv"))
+        writer.add_key_value("mbolt.ilv.type", types, GGUFValueType.ARRAY, sub_type=GGUFValueType.UINT32)
+        writer.add_key_value("mbolt.ilv.ne0", ne0s, GGUFValueType.ARRAY, sub_type=GGUFValueType.UINT32)
+        writer.add_key_value("mbolt.ilv.ne1", ne1s, GGUFValueType.ARRAY, sub_type=GGUFValueType.UINT32)
+        for (layer, part), t in sorted(routers.items()):
+            plan.append((t, perms_np[layer], "rows"))
+        for t in others:
+            plan.append((t, None, "copy"))
+    elif pack_pipeline:
         for layer in range(n_layers):
             for kind in ("up", "gate", "down"):
                 plan.append((exps[(layer, kind)], perms_np[layer], "slices"))
@@ -163,25 +186,46 @@ def rewrite(
             "expert starts would not be page-aligned"
         )
 
-    for t, _, _ in plan:
-        writer.add_tensor_info(t.name, t.data.shape, t.data.dtype, t.data.nbytes, t.tensor_type)
+    from gguf import GGMLQuantizationType
+
+    def _ilv_build(layer: int, perm: np.ndarray) -> np.ndarray:
+        parts = []
+        for kind in ("up", "gate", "down"):
+            t = exps[(layer, kind)]
+            flat = _flat_u8(t)
+            parts.append(flat.reshape(n_expert, flat.nbytes // n_expert)[perm])
+        return np.hstack(parts).reshape(-1)  # [E, up+gate+down] -> interleaved bytes
+
+    for item, perm, mode in plan:
+        if mode == "ilv":
+            layer = item
+            nbytes = sum(exps[(layer, k)].n_bytes for k in ("up", "gate", "down"))
+            writer.add_tensor_info(f"blk.{layer}.ffn_ilv_exps.weight", (nbytes,),
+                                   np.dtype(np.int8), nbytes, GGMLQuantizationType.I8)
+        else:
+            writer.add_tensor_info(item.name, item.data.shape, item.data.dtype,
+                                   item.data.nbytes, item.tensor_type)
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
     writer.write_ti_data_to_file()
 
-    stats = {"tensors": len(plan), "permuted_exps": 0, "permuted_router": 0}
-    for t, perm, mode in plan:
-        if mode == "slices":
-            data = _permute_slices(t, n_expert, perm)
+    stats = {"tensors": len(plan), "permuted_exps": 0, "permuted_router": 0, "ilv_blobs": 0}
+    for item, perm, mode in plan:
+        if mode == "ilv":
+            data = _ilv_build(item, perm).view(np.int8)
+            stats["ilv_blobs"] += 1
+            stats["permuted_exps"] += 3
+        elif mode == "slices":
+            data = _permute_slices(item, n_expert, perm)
             stats["permuted_exps"] += 1
         elif mode == "rows":
             # router: ne = [n_embd, n_expert] -> rows (ne[1]) are experts;
             # bias: ne = [n_expert] -> elements are experts
-            data = _permute_slices(t, n_expert, perm)
+            data = _permute_slices(item, n_expert, perm)
             stats["permuted_router"] += 1
         else:
-            data = t.data
+            data = item.data
         writer.write_tensor_data(data, tensor_endianess=reader.endianess)
 
     writer.close()

@@ -1,0 +1,20 @@
+evicting page cache via memory pressure (file-backed now 16.1 GB)...
+eviction done (file-backed now 12.7 GB)
+rep 0  orig:  309.54 ms/tok, 1418.2 reads/tok, 640.2 MB/tok
+evicting page cache via memory pressure (file-backed now 12.7 GB)...
+eviction done (file-backed now 3.2 GB)
+rep 0   ilv:  139.89 ms/tok,  367.9 reads/tok, 619.1 MB/tok
+evicting page cache via memory pressure (file-backed now 5.8 GB)...
+eviction done (file-backed now 3.1 GB)
+rep 1   ilv:  132.85 ms/tok,  362.4 reads/tok, 619.1 MB/tok
+evicting page cache via memory pressure (file-backed now 5.9 GB)...
+eviction done (file-backed now 3.2 GB)
+rep 1  orig:  301.71 ms/tok, 1418.7 reads/tok, 640.2 MB/tok
+evicting page cache via memory pressure (file-backed now 3.2 GB)...
+eviction done (file-backed now 3.1 GB)
+rep 2  orig:  297.15 ms/tok, 1414.8 reads/tok, 640.3 MB/tok
+evicting page cache via memory pressure (file-backed now 3.2 GB)...
+eviction done (file-backed now 3.2 GB)
+rep 2   ilv:  135.39 ms/tok,  385.1 reads/tok, 619.3 MB/tok
+
+medians: orig 301.7 ms/tok, ilv 135.4 ms/tok -> speedup 2.228x

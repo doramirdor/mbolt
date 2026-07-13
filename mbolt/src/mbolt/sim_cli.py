@@ -177,26 +177,47 @@ def cmd_evict(args):
 
 
 def cmd_prefetch_map(args):
-    """Emit the MBOLT_PREFETCH sidecar: expert tensor offsets for the C++
-    prefetcher (magic MBPF v1; see llama.cpp common/mbolt-trace.h)."""
+    """Emit the MBOLT_PREFETCH sidecar: expert slice ranges for the C++
+    prefetcher (magic MBPF v2; see llama.cpp common/mbolt-trace.h).
+    Normal layouts: 3 entries/layer (up|gate|down), stride == slice.
+    Interleaved layouts: 1 entry/layer over the blob - one contiguous
+    read covers an expert's up+gate+down."""
     import struct
 
     from gguf import GGUFReader
 
-    mm = load_model_map(args.model)
     reader = GGUFReader(args.model)
     arch = reader.get_field("general.architecture").contents()
     k = int(reader.get_field(f"{arch}.expert_used_count").contents())
+    n_expert = int(reader.get_field(f"{arch}.expert_count").contents())
+    ilv_f = reader.get_field("mbolt.interleaved")
+    interleaved = bool(ilv_f.contents()) if ilv_f else False
     model_path = os.path.abspath(args.model).encode()
 
-    with open(args.output, "wb") as f:
-        f.write(struct.pack("<6I", 0x4650424D, 1, mm.n_layers, mm.n_experts, k, len(model_path)))
-        f.write(model_path)
-        for layer in range(mm.n_layers):
-            for kind in ("up", "gate", "down"):
-                et = mm.experts[(layer, kind)]
-                f.write(struct.pack("<2Q", et.rec.offset, et.slice_bytes))
-    print(f"wrote {args.output}: {mm.n_layers} layers x {mm.n_experts} experts (top-{k})")
+    if interleaved:
+        blobs = {}
+        for t in reader.tensors:
+            if t.name.endswith(".ffn_ilv_exps.weight"):
+                blobs[int(t.name.split(".")[1])] = t
+        n_layers = len(blobs)
+        with open(args.output, "wb") as f:
+            f.write(struct.pack("<7I", 0x4650424D, 2, n_layers, n_expert, k, 1, len(model_path)))
+            f.write(model_path)
+            for layer in range(n_layers):
+                t = blobs[layer]
+                stride = int(t.n_bytes) // n_expert
+                f.write(struct.pack("<3Q", int(t.data_offset), stride, stride))
+        print(f"wrote {args.output}: interleaved, {n_layers} layers x {n_expert} experts (top-{k})")
+    else:
+        mm = load_model_map(args.model)
+        with open(args.output, "wb") as f:
+            f.write(struct.pack("<7I", 0x4650424D, 2, mm.n_layers, mm.n_experts, k, 3, len(model_path)))
+            f.write(model_path)
+            for layer in range(mm.n_layers):
+                for kind in ("up", "gate", "down"):
+                    et = mm.experts[(layer, kind)]
+                    f.write(struct.pack("<3Q", et.rec.offset, et.slice_bytes, et.slice_bytes))
+        print(f"wrote {args.output}: {mm.n_layers} layers x {mm.n_experts} experts (top-{k})")
 
 
 def cmd_gate(args):
