@@ -75,7 +75,7 @@ def run_once(model: str, sidecar: str | None):
 
 def main():
     orig, opt, orig_pf, opt_pf = sys.argv[1:5]
-    holder = subprocess.Popen([sys.executable, "-c", HOLDER_CODE, "24"],
+    holder = subprocess.Popen([sys.executable, "-c", HOLDER_CODE, sys.argv[5] if len(sys.argv) > 5 else "24"],
                               stdout=subprocess.PIPE, text=True)
     print(holder.stdout.readline().strip(), flush=True)
 
