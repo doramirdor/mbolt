@@ -1,0 +1,23 @@
+held 32 GB, mlocked 32 GB
+rep 0 orig      :   4.90 tok/s | pageins  54.83 GB | pf: off
+rep 0 orig +pf  :   9.00 tok/s | pageins  42.45 GB | pf: 40972 reads / 18.44 GB / 158822 resident
+rep 0 mbolt     :   6.10 tok/s | pageins  50.22 GB | pf: off
+rep 0 mbolt+pf  :   9.40 tok/s | pageins  47.71 GB | pf: 11538 reads / 17.67 GB / 53498 resident
+rep 1 mbolt+pf  :   9.80 tok/s | pageins  46.05 GB | pf: 10923 reads / 16.73 GB / 54210 resident
+rep 1 mbolt     :   6.30 tok/s | pageins  47.14 GB | pf: off
+rep 1 orig +pf  :   9.10 tok/s | pageins  42.66 GB | pf: 37227 reads / 16.74 GB / 162695 resident
+rep 1 orig      :   6.00 tok/s | pageins  49.55 GB | pf: off
+rep 2 orig      :   6.00 tok/s | pageins  49.78 GB | pf: off
+rep 2 orig +pf  :   9.20 tok/s | pageins  40.64 GB | pf: 38928 reads / 17.47 GB / 160978 resident
+rep 2 mbolt     :   5.80 tok/s | pageins  50.55 GB | pf: off
+rep 2 mbolt+pf  :   9.80 tok/s | pageins  46.67 GB | pf: 10778 reads / 16.52 GB / 54383 resident
+
+orig      : median 6.00 tok/s, runs [4.9, 6.0, 6.0]
+orig +pf  : median 9.10 tok/s, runs [9.0, 9.1, 9.2]
+mbolt     : median 6.10 tok/s, runs [5.8, 6.1, 6.3]
+mbolt+pf  : median 9.80 tok/s, runs [9.4, 9.8, 9.8]
+
+prefetch effect on orig : 1.517x
+prefetch effect on mbolt: 1.607x
+layout win with explicit reads (mbolt+pf vs orig+pf): 1.077x
+full stack (mbolt+pf vs orig no-pf): 1.633x

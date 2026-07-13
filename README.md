@@ -21,6 +21,8 @@ model can't fit in RAM (24 GB mlocked squeeze), CPU experts, 3-rep medians:
 | chain+pipeline layout + prefetcher | 8.00 | 1.38× |
 | **interleave layout + prefetcher** | **9.00** | **1.55×** |
 
+Tightening the squeeze to 32 GB (less cache, more streaming) grows the gap: stock 6.0 → interleave+prefetch 9.8 tok/s = **1.63×**. The more I/O-bound you are, the more mbolt pays.
+
 At the storage level (cold, physical files, held-out trace): 1,418 → ~370 reads/token,
 **2.23× faster** — the simulator predicted 2.29× and the rewritten file delivered it.
 The prefetcher alone (+13–31%) works on **any unmodified GGUF**; layouts multiply it.
@@ -83,7 +85,7 @@ mbolt-sim gate model.gguf route.bin perms.json -o gate.json
 | `mbolt/scripts/` | capture, gate, correctness CI, benchmarks, charts |
 | `results/phase0-gate.md` | simulator + gate report (30B) |
 | `results/phase1-report.md` | rewriter + correctness + E2E root-cause (80B) |
-| `results/phase2-report.md` | interleave + prefetcher: the 1.55× |
+| `results/phase2-report.md` | interleave + prefetcher: the 1.55–1.63× |
 
 Measurement discipline throughout: cold-probe-verified page cache (macOS `F_NOCACHE`
 doesn't evict existing pages; `purge` needs sudo), N-run medians, held-out traces,

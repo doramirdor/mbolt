@@ -36,6 +36,8 @@ Two engine-side sharp edges found and fixed:
 | interleave, fault streaming | 5.70 | 0.98× (faults stay layout-blind) |
 | **interleave + prefetcher** | **9.00** | **1.55×** |
 
+Sensitivity (32 GB mlocked squeeze, same protocol, N=3 medians, `results/qwen80/squeeze32.log`): stock 6.00, stock+pf 9.10 (1.52×), interleave 6.10, interleave+pf 9.80 — **full stack 1.63×**. Tighter memory → larger I/O share → larger win; the layout increment under parallel explicit reads stays modest on this fast NVMe (1.08×), consistent with the QD-vs-layout substitution finding.
+
 The mechanism is visible in the prefetcher's own counters: ~8.5k reads vs ~28.6k for the same ~13 GB — 3.3× fewer, ~1.5 MB average reads. Layout and explicit reads are complements: neither alone moves tok/s much on this hardware; together 1.55×.
 
 ## 4. Negative result: predictive cross-layer prefetch — rejected
