@@ -75,9 +75,11 @@ def cluster_layer(stats: LayerStats) -> tuple[list[int], list[list[int]]]:
     G = nx.Graph()
     G.add_nodes_from(range(E))
     co = stats.co
+    # for large expert counts, drop noise edges to keep modularity tractable
+    min_co = 1 if E <= 256 else max(2, int(stats.n_tokens * 5e-5))
     for i in range(E):
         for j in range(i + 1, E):
-            if co[i, j] > 0:
+            if co[i, j] >= min_co:
                 G.add_edge(i, j, weight=co[i, j] / max(1, stats.n_tokens))
     communities = nx.community.greedy_modularity_communities(G, weight="weight")
     clusters = [sorted(c, key=lambda e: -stats.heat[e]) for c in communities]

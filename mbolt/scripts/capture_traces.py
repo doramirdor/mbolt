@@ -6,13 +6,15 @@ thinking traces.
 """
 
 import json
+import os
 import sys
 import time
 import urllib.request
 
-PORT = 8089
+PORT = int(os.environ.get("MBOLT_PORT", "8089"))
 PROMPTS = "/Users/dor/Documents/code/GPUopt/traces/prompts.jsonl"
-MAX_TOKENS = 384
+MAX_TOKENS = int(os.environ.get("MBOLT_MAX_TOKENS", "384"))
+PROMPT_COUNT = int(os.environ.get("MBOLT_PROMPT_COUNT", "0"))  # 0 = all
 
 
 def chat(prompt: str) -> dict:
@@ -35,6 +37,8 @@ def chat(prompt: str) -> dict:
 
 def main():
     prompts = [json.loads(l) for l in open(PROMPTS)]
+    if PROMPT_COUNT:
+        prompts = prompts[:PROMPT_COUNT]
     start = int(sys.argv[1]) if len(sys.argv) > 1 else 0
     t0 = time.time()
     total_tokens = 0
