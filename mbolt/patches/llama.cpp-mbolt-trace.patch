@@ -47,10 +47,10 @@ index 8f13217..de799a7 100644
      llama_model * model = res->model();
 diff --git a/common/mbolt-trace.cpp b/common/mbolt-trace.cpp
 new file mode 100644
-index 0000000..e740398
+index 0000000..d837d08
 --- /dev/null
 +++ b/common/mbolt-trace.cpp
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,420 @@
 +#include "mbolt-trace.h"
 +
 +#include "log.h"
@@ -64,12 +64,15 @@ index 0000000..e740398
 +#include <unistd.h>
 +
 +#include <algorithm>
++#include <atomic>
++#include <condition_variable>
 +#include <cstdint>
 +#include <cstdio>
 +#include <cstdlib>
 +#include <cstring>
 +#include <mutex>
 +#include <string>
++#include <thread>
 +#include <vector>
 +
 +namespace {
@@ -113,7 +116,70 @@ index 0000000..e740398
 +    // stats
 +    uint64_t              n_reads = 0, n_bytes = 0, n_skipped = 0;
 +
++    // parallel-read pool (MBOLT_PREFETCH_THREADS, default 4; 1 = sequential).
++    // A layer's missing ranges have no ordering constraint, so they are read
++    // concurrently to raise NVMe queue depth.
++    int                                        n_threads = 4;
++    std::vector<std::thread>                   workers;
++    std::vector<std::pair<uint64_t, uint64_t>> queue;   // merged ranges of the current batch
++    size_t                                     q_next = 0;
++    std::atomic<uint64_t>                      q_bytes{0};
++    size_t                                     q_active = 0;
++    bool                                       q_stop = false;
++    std::mutex                                 q_mtx;
++    std::condition_variable                    q_cv_work, q_cv_done;
++
++    void worker_loop() {
++        std::vector<uint8_t> buf(8u << 20);
++        std::unique_lock<std::mutex> lk(q_mtx);
++        for (;;) {
++            q_cv_work.wait(lk, [&] { return q_stop || q_next < queue.size(); });
++            if (q_stop) {
++                return;
++            }
++            const auto range = queue[q_next++];
++            q_active++;
++            lk.unlock();
++            uint64_t off = range.first;
++            const uint64_t end = range.first + range.second;
++            while (off < end) {
++                const size_t chunk = std::min((uint64_t) buf.size(), end - off);
++                const ssize_t got = pread(fd, buf.data(), chunk, (off_t) off);
++                if (got <= 0) {
++                    break;
++                }
++                off += (uint64_t) got;
++                q_bytes += (uint64_t) got;
++            }
++            lk.lock();
++            q_active--;
++            if (q_next >= queue.size() && q_active == 0) {
++                q_cv_done.notify_all();
++            }
++        }
++    }
++
++    void run_ranges(std::vector<std::pair<uint64_t, uint64_t>> && ranges) {
++        std::unique_lock<std::mutex> lk(q_mtx);
++        queue = std::move(ranges);
++        q_next = 0;
++        q_cv_work.notify_all();
++        q_cv_done.wait(lk, [&] { return q_next >= queue.size() && q_active == 0; });
++        n_reads += queue.size();
++        n_bytes = q_bytes.load();
++    }
++
 +    ~mbolt_prefetch_state() {
++        {
++            std::lock_guard<std::mutex> lk(q_mtx);
++            q_stop = true;
++        }
++        q_cv_work.notify_all();
++        for (auto & w : workers) {
++            if (w.joinable()) {
++                w.join();
++            }
++        }
 +        if (ok) {
 +            LOG_INF("mbolt-prefetch: %llu reads, %.2f GB read, %llu slices already resident\n",
 +                    (unsigned long long) n_reads, n_bytes / 1e9, (unsigned long long) n_skipped);
@@ -180,9 +246,15 @@ index 0000000..e740398
 +    g_pf.page = (size_t) getpagesize();
 +    g_pf.scratch.resize(8u << 20);
 +    g_pf.incore.resize(1 << 12);
++    if (const char * s = getenv("MBOLT_PREFETCH_THREADS")) {
++        g_pf.n_threads = std::max(1, atoi(s));
++    }
++    for (int i = 0; i < g_pf.n_threads; ++i) {
++        g_pf.workers.emplace_back([] { g_pf.worker_loop(); });
++    }
 +    g_pf.ok = true;
-+    LOG_INF("mbolt-prefetch: active - %u layers x %u experts (top-%u), model '%s'\n",
-+            g_pf.n_layers, g_pf.n_expert, g_pf.n_expert_used, model_path.c_str());
++    LOG_INF("mbolt-prefetch: active - %u layers x %u experts (top-%u), %d read threads, model '%s'\n",
++            g_pf.n_layers, g_pf.n_expert, g_pf.n_expert_used, g_pf.n_threads, model_path.c_str());
 +    return true;
 +}
 +
@@ -246,30 +318,21 @@ index 0000000..e740398
 +    // merge ranges with small gaps, then pread each merged span (populates the
 +    // unified page cache; the expert matmul's mmap faults then hit warm pages)
 +    const uint64_t merge_gap = 256 * 1024;
++    std::vector<std::pair<uint64_t, uint64_t>> merged;
 +    uint64_t cur_off = ranges[0].first, cur_end = ranges[0].first + ranges[0].second;
-+    auto flush = [&]() {
-+        uint64_t off = cur_off;
-+        while (off < cur_end) {
-+            size_t chunk = std::min((uint64_t) g_pf.scratch.size(), cur_end - off);
-+            ssize_t got = pread(g_pf.fd, g_pf.scratch.data(), chunk, (off_t) off);
-+            if (got <= 0) {
-+                break;
-+            }
-+            off += (uint64_t) got;
-+            g_pf.n_bytes += (uint64_t) got;
-+        }
-+        g_pf.n_reads++;
-+    };
 +    for (size_t i = 1; i < ranges.size(); ++i) {
 +        if (ranges[i].first <= cur_end + merge_gap) {
 +            cur_end = std::max(cur_end, ranges[i].first + ranges[i].second);
 +        } else {
-+            flush();
++            merged.emplace_back(cur_off, cur_end - cur_off);
 +            cur_off = ranges[i].first;
 +            cur_end = ranges[i].first + ranges[i].second;
 +        }
 +    }
-+    flush();
++    merged.emplace_back(cur_off, cur_end - cur_off);
++
++    // the merged spans have no ordering constraint - read them concurrently
++    g_pf.run_ranges(std::move(merged));
 +}
 +
 +// ---------------- shared node matching ----------------

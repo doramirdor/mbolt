@@ -36,6 +36,7 @@ scripts/ci_correctness.sh                     # 4-gate correctness suite
 - `results/phase0-gate.md`, `results/phase1-report.md` — the write-ups
 - `results/launch_chart.png`, `results/gate_chart.png` — the charts
 - `mbolt-build-prompt.md` — original build spec
+- `results/final-report.md` — the audited TLDR of everything
 
 Measurement discipline: macOS `F_NOCACHE` does not bypass already-cached pages
 and `purge` needs sudo — every number here passed a cold-probe check
