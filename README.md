@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.svg" width="720" alt="mbolt — PGO for LLM weights"></p>
+<p align="center"><img src="assets/banner-sketch.png" width="720" alt="mbolt — PGO for LLM weights"></p>
 
 <p align="center">
   <a href="https://pypi.org/project/mbolt/"><img src="https://img.shields.io/pypi/v/mbolt?color=d4a017" alt="PyPI"></a>
@@ -66,7 +66,9 @@ M5 Pro MacBook / APPLE SSD, CPU experts, N=3 medians:
 | **interleave layout + prefetcher** | **9.00** | **1.55×** |
 | ↳ same, tighter memory (32GB squeeze) | 9.80 vs 6.00 | **1.63×** |
 
-<p align="center"><img src="results/launch_chart.png" width="880" alt="benchmark charts"></p>
+<p align="center"><img src="assets/charts-sketch.png" width="880" alt="benchmark charts"></p>
+
+<sub align="center">Hand-drawn rendering; machine-generated originals + raw per-run JSON in <a href="results/">results/</a>.</sub>
 
 Storage level (cold, physical files, held-out trace): **1,418 → ~370 reads/token (2.23×)**;
 the simulator predicted 2.29× and the rewritten file delivered 2.23×. Prefetcher read
