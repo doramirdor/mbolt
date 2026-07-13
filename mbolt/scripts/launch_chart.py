@@ -39,32 +39,24 @@ ax.set_title("what moving bytes buys: expert-read I/O floor\n"
 ax.set_ylim(0, max(toks) * 1.3)
 ax.grid(axis="y", alpha=0.3)
 
-# ---- Panel 2: llama.cpp end-to-end, stock vs MBOLT_PREFETCH ----
+# ---- Panel 2: llama.cpp end-to-end ladder (Phase 2 session, same-day runs) ----
 ax = axes[1]
-groups = ["stock llama.cpp\n(mmap faults)", "+ MBOLT_PREFETCH\n(explicit merged reads)"]
-orig_vals = [10.0, 11.3]   # medians, 3 reps, CPU ngl=0, 24GB mlocked squeeze
-mb_vals = [10.1, 11.5]
-x = np.arange(len(groups))
-w = 0.34
-ax.bar(x - w / 2, orig_vals, w, label="original file", color="#8c8c8c")
-ax.bar(x + w / 2, mb_vals, w, label="mbolt file", color="#2c7fb8")
-for xi, v in zip(x - w / 2, orig_vals):
-    ax.text(xi, v + 0.25, f"{v:.1f}", ha="center", fontsize=9)
-for xi, v in zip(x + w / 2, mb_vals):
-    ax.text(xi, v + 0.25, f"{v:.1f}", ha="center", fontsize=9)
-ax.axhline(23.8, ls="--", color="#666", lw=1)
-ax.text(-0.4, 24.2, "cached compute ceiling 23.8 tok/s", fontsize=8, color="#555")
-ax.annotate("+14%", xy=(1 + w / 2, 11.5), xytext=(1.28, 14.5), fontsize=11,
-            color="#2c7fb8", fontweight="bold",
-            arrowprops=dict(arrowstyle="->", color="#2c7fb8"))
-ax.set_xticks(x, groups, fontsize=9)
-ax.set_ylim(0, 27)
-ax.set_ylabel("end-to-end decode tok/s (CPU ngl=0, squeezed)")
-ax.set_title("llama.cpp end-to-end: fault streaming is layout-blind;\n"
-             "the mbolt prefetcher lifts both files +13-14% (full stack 1.15x).\n"
-             "Layout cuts read ops 21% in-engine; tok/s conversion awaits\n"
-             "storage-bound hardware or async prefetch (report SS4b)", fontsize=9)
-ax.legend(fontsize=9, loc="upper left")
+configs = ["stock file\nstock engine", "stock file\n+ prefetcher", "chain+pipeline\n+ prefetcher",
+           "interleave\nfaults only", "interleave\n+ prefetcher"]
+vals = [5.8, 7.6, 8.0, 5.7, 9.0]  # medians, 3 reps alternating, CPU experts, 24GB mlocked squeeze
+colors = ["#8c8c8c", "#74a9cf", "#2c7fb8", "#c9b37e", "#d4a017"]
+x = np.arange(len(configs))
+bars = ax.bar(x, vals, 0.62, color=colors)
+for xi, v in zip(x, vals):
+    sp = v / vals[0]
+    ax.text(xi, v + 0.12, f"{v:.1f}\n({sp:.2f}x)", ha="center", fontsize=8.5)
+ax.set_xticks(x, configs, fontsize=8)
+ax.set_ylim(0, 11.5)
+ax.set_ylabel("end-to-end decode tok/s (squeezed, 80B)")
+ax.set_title("llama.cpp end-to-end: layout and explicit reads are\n"
+             "complements - faults alone are layout-blind (0.98x);\n"
+             "interleave + prefetcher = 1.55x, reads/token 28.6k -> 8.5k\n"
+             "per 128 tokens (avg read 450KB -> 1.5MB)", fontsize=9.5)
 ax.grid(axis="y", alpha=0.3)
 
 # ---- Panel 3: replay speedups across regimes/models ----
@@ -73,6 +65,7 @@ regimes = ["30B warm\n(32/128)", "30B cold", "80B warm\n(128/512)", "80B cold"]
 chainpipe = [1.231, 1.270, 1.089, 1.247]
 interleave = [1.589, 1.780, 1.750, 2.292]
 x = np.arange(len(regimes))
+w = 0.34
 ax.bar(x - w / 2, chainpipe, w, label="chain+pipeline (shipped)", color="#2c7fb8")
 ax.bar(x + w / 2, interleave, w, label="interleave (needs per-expert tensors)", color="#d4a017")
 for xi, v in zip(x - w / 2, chainpipe):

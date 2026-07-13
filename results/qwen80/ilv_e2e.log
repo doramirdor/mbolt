@@ -1,0 +1,27 @@
+held 24 GB, mlocked 24 GB
+rep 0 orig      :   5.80 tok/s | pf: off
+rep 0 orig +pf  :   6.50 tok/s | pf: 27600 reads / 12.35 GB
+rep 0 mbolt+pf  :   6.80 tok/s | pf: 24977 reads / 12.32 GB
+rep 0 ilv       :   5.20 tok/s | pf: off
+rep 0 ilv  +pf  :   6.50 tok/s | pf: off
+rep 1 ilv  +pf  :   9.90 tok/s | pf: 8480 reads / 12.69 GB
+rep 1 ilv       :   6.00 tok/s | pf: off
+rep 1 mbolt+pf  :   8.60 tok/s | pf: 25963 reads / 12.92 GB
+rep 1 orig +pf  :   8.70 tok/s | pf: 28661 reads / 12.88 GB
+rep 1 orig      :   6.00 tok/s | pf: off
+rep 2 orig      :   5.80 tok/s | pf: off
+rep 2 orig +pf  :   7.60 tok/s | pf: 29200 reads / 13.13 GB
+rep 2 mbolt+pf  :   8.00 tok/s | pf: off
+rep 2 ilv       :   5.70 tok/s | pf: off
+rep 2 ilv  +pf  :   9.00 tok/s | pf: 8831 reads / 13.44 GB
+
+orig      : median 5.80 tok/s, runs [5.8, 5.8, 6.0]
+orig +pf  : median 7.60 tok/s, runs [6.5, 7.6, 8.7]
+mbolt+pf  : median 8.00 tok/s, runs [6.8, 8.0, 8.6]
+ilv       : median 5.70 tok/s, runs [5.2, 5.7, 6.0]
+ilv  +pf  : median 9.00 tok/s, runs [6.5, 9.0, 9.9]
+
+ilv+pf vs orig      : 1.552x
+ilv+pf vs orig+pf   : 1.184x
+ilv+pf vs mbolt+pf  : 1.125x
+ilv faults vs orig faults: 0.983x
