@@ -1,0 +1,29 @@
+dolly tokens 45303, codealpaca tokens 30470
+clustered dolly-trained on 45303 tokens
+clustered code-trained on 15235 tokens
+evicting page cache via memory pressure (file-backed now 11.9 GB)...
+eviction done (file-backed now 4.7 GB)
+cold probe: 2543 MB/s
+run 0       baseline:   62.38 ms/tok,  286.5 reads/tok
+run 0  dolly-trained:   51.08 ms/tok,  243.7 reads/tok
+run 0   code-trained:   42.83 ms/tok,  237.2 reads/tok
+run 0  mixed-trained:   39.48 ms/tok,  239.4 reads/tok
+evicting page cache via memory pressure (file-backed now 9.2 GB)...
+eviction done (file-backed now 4.6 GB)
+run 1       baseline:   66.21 ms/tok,  291.2 reads/tok
+run 1  dolly-trained:   48.55 ms/tok,  243.0 reads/tok
+run 1   code-trained:   41.70 ms/tok,  236.8 reads/tok
+run 1  mixed-trained:   38.75 ms/tok,  238.2 reads/tok
+evicting page cache via memory pressure (file-backed now 8.9 GB)...
+eviction done (file-backed now 4.6 GB)
+run 2       baseline:   57.23 ms/tok,  275.0 reads/tok
+run 2  dolly-trained:   47.03 ms/tok,  232.4 reads/tok
+run 2   code-trained:   39.54 ms/tok,  225.9 reads/tok
+run 2  mixed-trained:   35.48 ms/tok,  228.0 reads/tok
+evicting page cache via memory pressure (file-backed now 9.0 GB)...
+eviction done (file-backed now 4.9 GB)
+
+=== speedup vs baseline on CODEALPACA-only held-out tokens (median of same-window ratios) ===
+ dolly-trained: 1.221x  runs ['1.221', '1.364', '1.217']
+  code-trained: 1.456x  runs ['1.456', '1.588', '1.447']
+ mixed-trained: 1.613x  runs ['1.580', '1.709', '1.613']
