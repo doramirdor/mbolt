@@ -1,56 +1,100 @@
-<p align="center"><img src="assets/banner.svg" width="640" alt="mbolt"></p>
+<p align="center"><img src="assets/banner-sketch.png" width="720" alt="mbolt — PGO for LLM weights"></p>
 
-**Profile-guided layout optimization for MoE model files — BOLT/PGO, but for weights.**
+<p align="center">
+  <a href="https://pypi.org/project/mbolt/"><img src="https://img.shields.io/pypi/v/mbolt?color=d4a017" alt="PyPI"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-2c7fb8" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/license-MIT-8c8c8c" alt="MIT">
+  <img src="https://img.shields.io/badge/status-research%20%E2%86%92%20adoption-e6b325" alt="status">
+</p>
 
-Trace which experts your workload actually co-activates, then rewrite the GGUF so those
-bytes sit together on disk. Add a 150-line prefetcher patch to llama.cpp and
-memory-squeezed MoE decoding gets **1.55× faster end-to-end** — same machine, same
-model, same math. Weights are byte-exact, file size +0.003%.
+<h3 align="center">Rewrite your MoE model file around how it's actually used.<br>1.63× faster streaming — zero weight changes, +0.003% size.</h3>
 
-![results](results/launch_chart.png)
+---
 
-## Results
+## The idea
 
-Qwen3-Next-80B-A3B (33 GB, 512 experts/layer), M5 Pro MacBook / APPLE SSD AP1024Z,
-model can't fit in RAM (24 GB mlocked squeeze), CPU experts, 3-rep medians:
+Checkpoint tensor order is an accident of the training pipeline. But at inference time,
+MoE routing is *far* from random: experts fire in cliques (23% of pairs co-activate at
+>2× independence), and every decode token forces the engine to fetch dozens of expert
+slices scattered across a 30GB+ file.
+
+**mbolt does to model binaries what BOLT/PGO does to executables**: profile the real
+access pattern, then move the bytes so the hot path reads sequentially.
+
+```
+stock layout:      [e0][e1][e2][e3][e4][e5] ...        token needs e1,e4,e5 -> 3 seeks
+mbolt layout:      [e4][e5][e1][e0][e3][e2] ...        token needs e1,e4,e5 -> 1 read
+```
+
+Three composable pieces:
+
+1. **Trace** — one env var (`MBOLT_TRACE`) logs which experts each token selects. No output change.
+2. **Rewrite** — `mbolt model.gguf perms.json -o out.gguf` reorders expert slices by measured
+   co-activation (router rows re-permuted to match, so the model computes identically).
+   The `interleave` layout also packs each expert's up|gate|down as one contiguous block.
+3. **Prefetch** — `MBOLT_PREFETCH` makes llama.cpp read the selected slices explicitly
+   (sorted, merged, parallel `pread`s) instead of thousands of layout-blind 16KiB page faults.
+
+The routing profile ships *inside* the file (`mbolt.perm`, `mbolt.heat`, `mbolt.tier_hint`
+GGUF metadata) — any engine can consume it without re-profiling.
+
+## What's implemented
+
+| | component | status |
+|---|---|---|
+| ✅ | Routing tracer (llama.cpp patch, `MBOLT_TRACE`) | works under Metal & CPU |
+| ✅ | Co-activation clustering (modularity + greedy chain ordering) | `mbolt-sim cluster` |
+| ✅ | Replay simulator — predicts your speedup *before* rewriting | `mbolt-sim gate`, matched physical files to 1–3% |
+| ✅ | Rewriter: `chain+pipeline` layout (reorder within tensors) | `mbolt`, loads in **unmodified** llama.cpp |
+| ✅ | Rewriter: `interleave` layout (up\|gate\|down contiguous per expert) | strided-view loader patch, no per-expert tensor explosion |
+| ✅ | Explicit-read prefetcher (llama.cpp patch, `MBOLT_PREFETCH`) | +31–52% alone on **any** GGUF, parallel reads |
+| ✅ | 4-gate correctness CI (byte-verify · identity proof · routing equivalence · KLD envelope) | `scripts/ci_correctness.sh` |
+| ✅ | Cross-domain generalization measured | dolly-trained layout → 1.22× on pure code |
+| 🚧 | Safetensors/MLX port | roadmap |
+| 🚧 | Upstream llama.cpp PR | staged: `doramirdor/llama.cpp:mbolt-prefetch` |
+
+## The numbers
+
+Qwen3-Next-80B-A3B (33GB, 512 experts/layer, doesn't fit in available RAM),
+M5 Pro MacBook / APPLE SSD, CPU experts, N=3 medians:
 
 | config | tok/s | vs stock |
 |---|---|---|
 | stock file, stock llama.cpp | 5.80 | — |
 | stock file + prefetcher | 7.60 | 1.31× |
-| chain+pipeline layout + prefetcher | 8.00 | 1.38× |
+| reorder layout + prefetcher | 8.00 | 1.38× |
 | **interleave layout + prefetcher** | **9.00** | **1.55×** |
+| ↳ same, tighter memory (32GB squeeze) | 9.80 vs 6.00 | **1.63×** |
 
-Tightening the squeeze to 32 GB (less cache, more streaming) grows the gap: stock 6.0 → interleave+prefetch 9.8 tok/s = **1.63×**. The more I/O-bound you are, the more mbolt pays.
+<p align="center"><img src="assets/charts-sketch.png" width="880" alt="benchmark charts"></p>
 
-At the storage level (cold, physical files, held-out trace): 1,418 → ~370 reads/token,
-**2.23× faster** — the simulator predicted 2.29× and the rewritten file delivered it.
-The prefetcher alone (+13–31%) works on **any unmodified GGUF**; layouts multiply it.
+Storage level (cold, physical files, held-out trace): **1,418 → ~370 reads/token (2.23×)**;
+the simulator predicted 2.29× and the rewritten file delivered 2.23×. Prefetcher read
+counters: 28.6k → 8.5k reads for the same ~13GB (avg read 450KB → 1.5MB).
 
-Correctness (enforced by a 4-gate CI suite): weights byte-exact, routing maps 100.000%
-through the permutation at equal inputs, output perturbation (KLD 0.00096, top-1 98.9%)
-is **5× below** the same engine's CPU↔Metal delta. Full analysis, including why
-token-identity is impossible under *any* expert permutation: [results/phase1-report.md](results/phase1-report.md).
+Correctness: weights **byte-exact**, routing maps **100.000%** through the permutation at
+equal inputs, output perturbation (KLD 0.00096, top-1 98.9%) is **5× below** the same
+engine's CPU↔Metal backend delta. Why token-identity is impossible under *any* expert
+permutation (and how we proved the rewrite isn't the cause): [results/phase1-report.md](results/phase1-report.md).
+
+Generalization: layouts trained on general instructions still deliver **1.22×** on a
+pure-code workload (in-domain 1.46×, mixed 1.61×) — profiles transfer; matched tracing buys the rest.
 
 ## Quickstart
 
 ```bash
-git clone https://github.com/doramirdor/mbolt && cd mbolt/mbolt
-uv venv && uv pip install -e .
+pip install mbolt   # mbolt + mbolt-sim CLIs
 
-# patch + build llama.cpp (adds MBOLT_TRACE / MBOLT_PREFETCH, ~330 lines)
+# patch + build llama.cpp (adds MBOLT_TRACE / MBOLT_PREFETCH / interleave loader)
+git clone https://github.com/doramirdor/mbolt && cd mbolt
 git clone https://github.com/ggml-org/llama.cpp
-git -C llama.cpp apply ../patches/llama.cpp-mbolt-trace.patch
+git -C llama.cpp apply ../mbolt/patches/llama.cpp-mbolt-trace.patch
 cmake -S llama.cpp -B llama.cpp/build -DCMAKE_BUILD_TYPE=Release
 cmake --build llama.cpp/build --target llama-cli llama-server -j
 
-# 1. capture routing on YOUR workload
+# 1. trace YOUR workload            2. cluster           3. rewrite
 MBOLT_TRACE=route.bin llama.cpp/build/bin/llama-server -m model.gguf ...
-
-# 2. cluster co-activation -> permutations
 mbolt-sim cluster route.bin -o perms.json
-
-# 3. rewrite the file (layouts: chain+pipeline | interleave)
 mbolt model.gguf perms.json -o model.opt.gguf --layout interleave
 
 # 4. decode with explicit-read prefetch
@@ -58,50 +102,27 @@ mbolt-sim prefetch-map model.opt.gguf -o opt.pfmap
 MBOLT_PREFETCH=opt.pfmap llama.cpp/build/bin/llama-cli -m model.opt.gguf \
     -ot ".ffn_.*_exps.=CPU" ...
 
-# predict your gain first, without rewriting anything (physical I/O replay):
+# or predict your gain first — no rewrite needed:
 mbolt-sim gate model.gguf route.bin perms.json -o gate.json
 ```
 
-## How it works
+## When it helps (and when it won't)
 
-1. **Trace** — an eval-callback in llama.cpp logs the router's top-k expert ids per token per layer (`MBOLT_TRACE`, no output change).
-2. **Cluster** — per layer, a co-activation graph (edge = P(i,j fire together)) → greedy modularity communities → experts ordered by a max-co-activation chain within each clique.
-3. **Rewrite** — expert slices are physically permuted inside each `ffn_*_exps` tensor (router rows re-permuted to match, so the model computes identically); `interleave` packs each expert's up|gate|down adjacent using strided tensor views — no per-expert tensor explosion, ~90-line loader change.
-4. **Prefetch** — when the router picks experts (a few graph nodes before the matmuls), the patch `pread()`s exactly the needed slices as sorted, merged, parallel reads into the page cache — replacing thousands of layout-blind 16 KiB page faults. On a co-activation-ordered file the ranges collapse into few ~1.5 MB sequential reads.
-5. The profile ships **inside the file** (`mbolt.*` GGUF metadata: permutations, per-expert heat, tier hints) — any engine can use it without re-profiling.
+- Gains scale with how **I/O-bound** you are: model ≳ RAM, or storage slower than
+  Apple-class NVMe. Fully-cached models see no change (there's nothing to stream).
+- The layout only pays with **explicit reads** — stock llama.cpp's mmap fault path is
+  layout-blind (measured: parity). Use the bundled prefetcher, or an explicit-read
+  engine ([colibri](https://github.com/JustVugg/colibri)-class).
+- Trace on prompts resembling your deployment mix; profiles transfer across domains
+  (measured above) but matched tracing is worth ~20–30%.
 
-## Why your results may differ
-
-- Gains scale with how I/O-bound you are. Fast NVMe + small model + lots of RAM → compute-bound → little visible change. Slow drive / bigger model / tighter memory → the 2.2× storage win shows through.
-- Routing profiles are workload-dependent; capture traces on prompts like yours (clustering held up on a disjoint test split here, but measure).
-- Single-machine results so far (M5 Pro). Reproductions welcome — especially on slower drives.
-
-## Repo map
-
-| path | what |
-|---|---|
-| `mbolt/src/` | package: offset mapper, trace parser, clustering, layouts, replay simulator, CLIs |
-| `mbolt/patches/` | llama.cpp patch (tracer + prefetcher + interleave loader) |
-| `mbolt/scripts/` | capture, gate, correctness CI, benchmarks, charts |
-| `results/phase0-gate.md` | simulator + gate report (30B) |
-| `results/phase1-report.md` | rewriter + correctness + E2E root-cause (80B) |
-| `results/phase2-report.md` | interleave + prefetcher: the 1.55–1.63× |
-
-Measurement discipline throughout: cold-probe-verified page cache (macOS `F_NOCACHE`
-doesn't evict existing pages; `purge` needs sudo), N-run medians, held-out traces,
-alternating run order. Every number in the reports survived an adversarial recompute
-audit against the raw JSONs.
-
-## Roadmap
-
-- Safetensors/MLX port (same pass, different container)
-- Upstream llama.cpp PR for the prefetcher (staged: `doramirdor/llama.cpp:mbolt-prefetch`)
-- Slower-drive-class + second-machine benchmarks
-- Per-expert quantization tiers driven by measured heat (`mbolt.tier_hint` already in the file)
+Measurement discipline: cold-probe-verified page cache, N-run medians, held-out traces,
+alternating run order; every number survived an adversarial recompute audit.
+Reports: [phase0](results/phase0-gate.md) · [phase1](results/phase1-report.md) · [phase2](results/phase2-report.md)
 
 ## Cite
 
-```
+```bibtex
 @misc{mbolt2026,
   title  = {mbolt: Profile-Guided Layout Optimization for MoE Model Files},
   author = {Amir, Dor},
@@ -110,4 +131,4 @@ audit against the raw JSONs.
 }
 ```
 
-MIT license.
+MIT · logo & hand-drawn charts in [`assets/`](assets/)

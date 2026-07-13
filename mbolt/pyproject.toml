@@ -1,9 +1,26 @@
 [project]
 name = "mbolt"
 version = "0.1.0"
-description = "Profile-guided layout optimization for GGUF models (BOLT/PGO for LLM weights)"
+description = "Profile-guided layout optimization for GGUF MoE models (BOLT/PGO for LLM weights)"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [{ name = "Dor Amir" }]
+keywords = ["gguf", "llama.cpp", "moe", "mixture-of-experts", "pgo", "layout", "quantization", "inference"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = ["gguf>=0.10", "numpy>=1.26", "networkx>=3.2"]
+
+[project.urls]
+Homepage = "https://github.com/doramirdor/mbolt"
+Repository = "https://github.com/doramirdor/mbolt"
+Issues = "https://github.com/doramirdor/mbolt/issues"
 
 [project.scripts]
 mbolt-sim = "mbolt.sim_cli:main"
