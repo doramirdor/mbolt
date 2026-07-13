@@ -1,4 +1,4 @@
-# mbolt
+<p align="center"><img src="assets/banner.svg" width="640" alt="mbolt"></p>
 
 **Profile-guided layout optimization for MoE model files — BOLT/PGO, but for weights.**
 
