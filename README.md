@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner-sketch.png" width="720" alt="mbolt — PGO for LLM weights"></p>
+<p align="center"><img src="assets/social-preview.png" width="760" alt="mbolt — profile-guided MoE layout, 2.23× fewer disk reads"></p>
 
 <p align="center">
   <a href="https://pypi.org/project/mbolt/"><img src="https://img.shields.io/pypi/v/mbolt?color=d4a017" alt="PyPI"></a>
