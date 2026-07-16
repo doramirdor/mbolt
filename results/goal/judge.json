@@ -1,0 +1,64 @@
+{
+  "tally": {
+    "orig": 2,
+    "mbolt": 0,
+    "tie": 3
+  },
+  "results": [
+    {
+      "prompt_id": "reason",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both answers identical, cut off before final answer"
+      },
+      "winner_model": "tie",
+      "identical": true
+    },
+    {
+      "prompt_id": "code",
+      "A": "mbolt",
+      "B": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B specifies F(2)=1, F(3)=2 correctly; A never confirms base cases"
+      },
+      "winner_model": "orig",
+      "identical": false
+    },
+    {
+      "prompt_id": "summarize",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers identical and both truncated mid-sentence"
+      },
+      "winner_model": "tie",
+      "identical": true
+    },
+    {
+      "prompt_id": "factual",
+      "A": "mbolt",
+      "B": "orig",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical text, both truncated before giving required examples"
+      },
+      "winner_model": "tie",
+      "identical": true
+    },
+    {
+      "prompt_id": "logic",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A completes the answer; B cut off mid-sentence, incomplete."
+      },
+      "winner_model": "orig",
+      "identical": false
+    }
+  ]
+}

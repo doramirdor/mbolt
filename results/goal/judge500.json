@@ -1,0 +1,1092 @@
+{
+  "tally": {
+    "orig": 46,
+    "mbolt": 48,
+    "tie": 26,
+    "err": 0
+  },
+  "n_diverged": 171,
+  "n_judged": 120,
+  "results": [
+    {
+      "idx": 1,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A correctly attributes son to both; B vaguer, adds unsupported details"
+      }
+    },
+    {
+      "idx": 2,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "More topping detail, mentions grilled and Oaxaca, slightly fuller"
+      }
+    },
+    {
+      "idx": 5,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both answers identical and correct: Palette"
+      }
+    },
+    {
+      "idx": 9,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A completes the play-off explanation; B truncates mid-sentence"
+      }
+    },
+    {
+      "idx": 11,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers are identical in content"
+      }
+    },
+    {
+      "idx": 12,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A explicitly notes trivial full-string interpretation; near-identical otherwise"
+      }
+    },
+    {
+      "idx": 14,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B lists more weapons with useful variants"
+      }
+    },
+    {
+      "idx": 15,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A correctly identifies number type; both otherwise equal"
+      }
+    },
+    {
+      "idx": 18,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B shows complete day schedule; A cut off earlier"
+      }
+    },
+    {
+      "idx": 20,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A explains the right-hand rule; B truncates before it"
+      }
+    },
+    {
+      "idx": 21,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "B contains fabricated etymology; A stays accurate"
+      }
+    },
+    {
+      "idx": 23,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B correctly distinguishes over-medium/over-hard yolk states"
+      }
+    },
+    {
+      "idx": 24,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B completes vegetable definition; A cut off earlier"
+      }
+    },
+    {
+      "idx": 31,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical answers; B's extra offer is trivial"
+      }
+    },
+    {
+      "idx": 32,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Nearly identical answers, both truncated identically"
+      }
+    },
+    {
+      "idx": 34,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical code and output, trivially different closing wording"
+      }
+    },
+    {
+      "idx": 36,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A provides more concrete highlight detail than B"
+      }
+    },
+    {
+      "idx": 38,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B completes the truncated district name correctly"
+      }
+    },
+    {
+      "idx": 39,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers are substantively identical in content and quality"
+      }
+    },
+    {
+      "idx": 40,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "Includes more grape varieties, equally accurate and clear"
+      }
+    },
+    {
+      "idx": 44,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A more coherent, factual; B includes unverified beauty-enhancement claims"
+      }
+    },
+    {
+      "idx": 46,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both list identical correct members; trivial ordering differences only"
+      }
+    },
+    {
+      "idx": 48,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "B is cut off mid-sentence, incomplete"
+      }
+    },
+    {
+      "idx": 53,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B avoids A's nonsensical 'Harpic' clarification suggestion"
+      }
+    },
+    {
+      "idx": 55,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B adds mission/value personalization, cleaner ending without stray hashtag"
+      }
+    },
+    {
+      "idx": 59,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B more complete, correct; FaceRig accurate, better structured"
+      }
+    },
+    {
+      "idx": 65,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A gives accurate trail details; B has factual errors"
+      }
+    },
+    {
+      "idx": 67,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A's pros/cons more accurate; B contains contradictions"
+      }
+    },
+    {
+      "idx": 68,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "Nearly identical; A phrases final points marginally more completely"
+      }
+    },
+    {
+      "idx": 73,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B adds accurate maximal/maximum clique detail; A truncated mid-example"
+      }
+    },
+    {
+      "idx": 76,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both list identical correct eight vegetables"
+      }
+    },
+    {
+      "idx": 78,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B's preserved-order example is more complete before truncation"
+      }
+    },
+    {
+      "idx": 83,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "Both correct; B adds clarifying justifications, equally accurate"
+      }
+    },
+    {
+      "idx": 86,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A includes complete submit button; B truncates earlier"
+      }
+    },
+    {
+      "idx": 89,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A shows complete working toggle logic; B truncated before script"
+      }
+    },
+    {
+      "idx": 94,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A correctly states toe pick of free foot"
+      }
+    },
+    {
+      "idx": 98,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B handles arbitrary whitespace; A brittle to inconsistent spacing"
+      }
+    },
+    {
+      "idx": 102,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A adds correct country names; both equally accurate otherwise"
+      }
+    },
+    {
+      "idx": 103,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "B's explanation is truncated mid-sentence; A complete"
+      }
+    },
+    {
+      "idx": 104,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B is complete; A cuts off mid-sentence"
+      }
+    },
+    {
+      "idx": 114,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B clarifies inclusive range and loop termination"
+      }
+    },
+    {
+      "idx": 115,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers are substantively identical in content"
+      }
+    },
+    {
+      "idx": 116,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A includes patent title, both otherwise identical and accurate"
+      }
+    },
+    {
+      "idx": 125,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A includes sieve loop; B truncates before algorithm logic"
+      }
+    },
+    {
+      "idx": 127,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both accurately describe kids telling jokes to Justin"
+      }
+    },
+    {
+      "idx": 129,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A uses accurate class name; B's name mismatches merge task"
+      }
+    },
+    {
+      "idx": 130,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A handles empty string correctly; B returns input unchanged"
+      }
+    },
+    {
+      "idx": 132,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A is complete; B truncated mid-query earlier"
+      }
+    },
+    {
+      "idx": 137,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A's quotes are coherent; B contains nonsensical, contradictory statements"
+      }
+    },
+    {
+      "idx": 138,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B directly restates flat-topped mountain, clearer answer"
+      }
+    },
+    {
+      "idx": 139,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B lists multiple sites with more detail"
+      }
+    },
+    {
+      "idx": 143,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A completes skull definition slightly more; both otherwise identical"
+      }
+    },
+    {
+      "idx": 146,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B fully states Justin.tv shutdown; A cuts off abruptly"
+      }
+    },
+    {
+      "idx": 152,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B correctly computes next number; A's code truncated and broken"
+      }
+    },
+    {
+      "idx": 154,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B's regex requires a dot, correctly matching only URLs"
+      }
+    },
+    {
+      "idx": 155,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B includes final comment; A cut off mid-comment"
+      }
+    },
+    {
+      "idx": 156,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A completes final sentence; B trails off less informatively"
+      }
+    },
+    {
+      "idx": 158,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A names sati/widow remarriage; B says Ram Mohan, both minor. A slightly fuller."
+      }
+    },
+    {
+      "idx": 159,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A more complete; B truncated earlier"
+      }
+    },
+    {
+      "idx": 170,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A provides more content beyond the heading."
+      }
+    },
+    {
+      "idx": 172,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "Both nearly identical; A more coherent, B trails off mid-sentence"
+      }
+    },
+    {
+      "idx": 181,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A complete and coherent; B truncated mid-sentence"
+      }
+    },
+    {
+      "idx": 187,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B specifies all elements checked before concluding absent"
+      }
+    },
+    {
+      "idx": 188,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both identify YouTube Music as third app correctly"
+      }
+    },
+    {
+      "idx": 190,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A includes wheat, matching passage; B omits it"
+      }
+    },
+    {
+      "idx": 195,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers are functionally identical with same code and output"
+      }
+    },
+    {
+      "idx": 202,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A completes dissociation point; B cuts off mid-explanation"
+      }
+    },
+    {
+      "idx": 205,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical correct code and output"
+      }
+    },
+    {
+      "idx": 206,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "B falsely claims single peak; A more accurate on shading"
+      }
+    },
+    {
+      "idx": 208,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B's wearable point adds chronic disease management, more complete"
+      }
+    },
+    {
+      "idx": 209,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A directly delivers religion overviews as offered"
+      }
+    },
+    {
+      "idx": 210,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B adds example output, equally correct otherwise"
+      }
+    },
+    {
+      "idx": 212,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A validates the date; both otherwise truncated equally"
+      }
+    },
+    {
+      "idx": 213,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "B's final total truncated to wrong 30"
+      }
+    },
+    {
+      "idx": 215,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical code and examples, negligible wording difference"
+      }
+    },
+    {
+      "idx": 217,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B is complete and accurate; A cut off, wrong 75%"
+      }
+    },
+    {
+      "idx": 229,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B is slightly more complete and specific"
+      }
+    },
+    {
+      "idx": 235,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B mentions read/write, completes relative address sentence"
+      }
+    },
+    {
+      "idx": 238,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "Both truncated; A more accurate, breast milk protective emphasis"
+      }
+    },
+    {
+      "idx": 239,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical code and output, negligible wording difference"
+      }
+    },
+    {
+      "idx": 241,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B is complete; A cut off mid-answer"
+      }
+    },
+    {
+      "idx": 242,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A gives clearer definition and complete example setup"
+      }
+    },
+    {
+      "idx": 246,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B more precise on regular-season crown nuance"
+      }
+    },
+    {
+      "idx": 248,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers are substantively identical in content and correctness"
+      }
+    },
+    {
+      "idx": 256,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B correctly includes input/output devices; A narrower/less accurate"
+      }
+    },
+    {
+      "idx": 258,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A more complete; B cut off earlier"
+      }
+    },
+    {
+      "idx": 263,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B is complete and structured; A cut off mid-sentence"
+      }
+    },
+    {
+      "idx": 264,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A covers violence risks; both truncated, similar quality"
+      }
+    },
+    {
+      "idx": 265,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A more accurate; B wrongly calls battery+grid setup off-grid"
+      }
+    },
+    {
+      "idx": 270,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A adds Bengaluru clarification; otherwise identical answers"
+      }
+    },
+    {
+      "idx": 276,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "Both correct; B adds accurate identifying context."
+      }
+    },
+    {
+      "idx": 289,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A offers useful full-list follow-up; classifications identical otherwise"
+      }
+    },
+    {
+      "idx": 291,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B completes variance sentence; A truncates mid-word earlier"
+      }
+    },
+    {
+      "idx": 296,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A more complete; B omits Sarah Taylor's country"
+      }
+    },
+    {
+      "idx": 297,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "Five distinct methods; B repeats fires and merges two."
+      }
+    },
+    {
+      "idx": 303,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "CROSS JOIN with WHERE is correct; B's ON-only self-join works too but A cleaner"
+      }
+    },
+    {
+      "idx": 307,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both correctly answer 5 bytes with valid reasoning"
+      }
+    },
+    {
+      "idx": 309,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical correct query, near-equivalent truncated explanations"
+      }
+    },
+    {
+      "idx": 312,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both give correct, clear, complete answer"
+      }
+    },
+    {
+      "idx": 313,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "Both wrong on Ducheke; A's detail slightly more accurate"
+      }
+    },
+    {
+      "idx": 319,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B lists more subletting-clause options, more complete"
+      }
+    },
+    {
+      "idx": 322,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A includes more complete getters/setters before truncation"
+      }
+    },
+    {
+      "idx": 333,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both correct, two conferences, near-identical reasoning"
+      }
+    },
+    {
+      "idx": 335,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical answers except effects/influence synonym, no quality difference"
+      }
+    },
+    {
+      "idx": 337,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both identical, truncated at same point"
+      }
+    },
+    {
+      "idx": 341,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B includes Dari\u00e9n Gap detail and segment lengths"
+      }
+    },
+    {
+      "idx": 342,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A finishes all cheese items; B omits Cheddar-region, truncates same"
+      }
+    },
+    {
+      "idx": 343,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A complete; B truncated mid-sentence"
+      }
+    },
+    {
+      "idx": 344,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical answers, same wrong right part"
+      }
+    },
+    {
+      "idx": 346,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "Backup advice more relevant than permissions note"
+      }
+    },
+    {
+      "idx": 347,
+      "A": "orig",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B explains barking misconception, more complete and accurate"
+      }
+    },
+    {
+      "idx": 348,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both truncated identically, same content quality"
+      }
+    },
+    {
+      "idx": 350,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A shows correct carry result; B cuts off earlier."
+      }
+    },
+    {
+      "idx": 353,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "Nearly identical; both truncated, no meaningful difference"
+      }
+    },
+    {
+      "idx": 354,
+      "A": "orig",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both identical in substance and correctness"
+      }
+    },
+    {
+      "idx": 355,
+      "A": "mbolt",
+      "winner_model": "tie",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Both correct, complete, equivalent quality"
+      }
+    },
+    {
+      "idx": 357,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "B adds unsupported point 7 not in text"
+      }
+    },
+    {
+      "idx": 359,
+      "A": "mbolt",
+      "winner_model": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A correctly identifies K'ni; B fabricates Rakatak, fails K'ni"
+      }
+    },
+    {
+      "idx": 364,
+      "A": "orig",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "A",
+        "reason": "A lists more housewife cities; B truncates similarly, less content"
+      }
+    },
+    {
+      "idx": 365,
+      "A": "mbolt",
+      "winner_model": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B drops redundant English gloss of already-English title"
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+evaluating on held-out tokens [60618:75773]
+evicting page cache via memory pressure (file-backed now 20.2 GB)...
+eviction done (file-backed now 3.6 GB)
+device random-read speed (cold, 600KiB): 2325 MB/s; re-evict ceiling 3255 MB/s
+decode tokens 15155, 3 runs, window=112 (64 warmup + 48 measured), cache=0 slots/layer
+cold-read probe: 2365 MB/s (ceiling 3255)
+  run 0   chain+pipeline:  211.27 ms/tok median,   4.73 tok/s,  774.6 reads/tok,  751.3 MB/tok, hit 0.00
+  run 0         baseline:  255.01 ms/tok median,   3.92 tok/s, 1088.8 reads/tok,  760.5 MB/tok, hit 0.00
+  run 0            chain:  187.31 ms/tok median,   5.34 tok/s,  774.7 reads/tok,  755.4 MB/tok, hit 0.00
+  run 0       interleave:  101.86 ms/tok median,   9.82 tok/s,  258.2 reads/tok,  745.5 MB/tok, hit 0.00
+cold-read probe: 3867 MB/s (ceiling 3255)
+evicting page cache via memory pressure (file-backed now 10.8 GB)...
+eviction done (file-backed now 3.5 GB)
+cold-read probe after evict: 2280 MB/s
+  run 1       interleave:  106.63 ms/tok median,   9.38 tok/s,  256.7 reads/tok,  745.5 MB/tok, hit 0.00
+  run 1   chain+pipeline:  166.73 ms/tok median,   6.00 tok/s,  770.1 reads/tok,  751.2 MB/tok, hit 0.00
+  run 1            chain:  167.38 ms/tok median,   5.97 tok/s,  770.1 reads/tok,  755.3 MB/tok, hit 0.00
+  run 1         baseline:  200.55 ms/tok median,   4.99 tok/s, 1076.9 reads/tok,  760.2 MB/tok, hit 0.00
+cold-read probe: 3394 MB/s (ceiling 3255)
+evicting page cache via memory pressure (file-backed now 9.1 GB)...
+eviction done (file-backed now 3.5 GB)
+cold-read probe after evict: 2305 MB/s
+  run 2   chain+pipeline:  222.90 ms/tok median,   4.49 tok/s,  848.6 reads/tok,  752.1 MB/tok, hit 0.00
+  run 2            chain:  207.48 ms/tok median,   4.82 tok/s,  848.6 reads/tok,  756.6 MB/tok, hit 0.00
+  run 2         baseline:  237.28 ms/tok median,   4.21 tok/s, 1091.3 reads/tok,  760.6 MB/tok, hit 0.00
+  run 2       interleave:  112.71 ms/tok median,   8.87 tok/s,  282.9 reads/tok,  745.8 MB/tok, hit 0.00
+
+=== speedup vs baseline (same-window ratios, median over runs) ===
+          baseline: 1.000x  (runs: ['1.000', '1.000', '1.000'])
+             chain: 1.198x  (runs: ['1.144', '1.198', '1.361'])
+    chain+pipeline: 1.203x  (runs: ['1.065', '1.203', '1.207'])
+        interleave: 2.105x  (runs: ['1.881', '2.105', '2.504'])

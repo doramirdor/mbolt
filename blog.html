@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mbolt — same quality when warm, 2.1× faster when cold</title>
+<style>
+  :root{
+    --paper:#fbf7ec; --paper2:#f4eeda; --ink:#2b2b2b; --muted:#6b6455;
+    --blue:#2f6fd8; --orange:#e8a72e; --line:#d9cfb4; --card:#fffdf6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#1c1a16; --paper2:#232019; --ink:#ece7da; --muted:#a89f8b;
+      --blue:#6ea1f5; --orange:#f0b94a; --line:#3a352b; --card:#232019; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    line-height:1.65;font-size:18px;}
+  .wrap{max-width:820px;margin:0 auto;padding:0 22px 90px;}
+  header.hero{max-width:1000px;margin:0 auto;padding:38px 22px 6px;text-align:center;}
+  .hero img{width:100%;max-width:720px;height:auto;}
+  h1{font-size:2.05rem;line-height:1.15;margin:.6em 0 .1em;letter-spacing:-.01em;}
+  h2{font-size:1.5rem;margin:2.4em 0 .5em;padding-bottom:.2em;
+    border-bottom:2px solid var(--line);}
+  h2 .n{color:var(--orange);font-variant-numeric:tabular-nums;margin-right:.35em;}
+  .kicker{color:var(--blue);font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:.72rem;font-family:ui-monospace,Menlo,monospace;}
+  .lede{font-size:1.24rem;color:var(--ink);margin:.4em 0 0;}
+  .byline{color:var(--muted);font-size:.9rem;margin:.8em 0 0;
+    font-family:ui-monospace,Menlo,monospace;}
+  p{margin:.9em 0;}
+  a{color:var(--blue);}
+  strong{color:var(--blue);}
+  em.o{color:var(--orange);font-style:normal;font-weight:700;}
+  figure{margin:1.8em 0;}
+  figure img{width:100%;height:auto;border-radius:12px;
+    box-shadow:0 6px 26px rgba(60,45,10,.14);border:1px solid var(--line);
+    background:var(--card);}
+  figcaption{color:var(--muted);font-size:.86rem;text-align:center;margin-top:.6em;
+    font-style:italic;}
+  .pull{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--orange);
+    border-radius:10px;padding:14px 20px;margin:1.6em 0;font-size:1.1rem;}
+  .tldr{background:var(--paper2);border:1px solid var(--line);border-radius:14px;
+    padding:6px 24px 14px;margin:2em 0;}
+  .tldr h3{color:var(--blue);margin:.9em 0 .2em;font-size:1.05rem;}
+  .tldr ul{margin:.3em 0;padding-left:1.2em;}
+  .tldr li{margin:.35em 0;}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;
+    background:var(--paper2);padding:.08em .38em;border-radius:5px;border:1px solid var(--line);}
+  .cols{display:flex;gap:16px;flex-wrap:wrap;margin:1.4em 0;}
+  .col{flex:1 1 230px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;}
+  .col h4{margin:.1em 0 .3em;color:var(--blue);font-size:1rem;}
+  .col .big{font-size:1.9rem;font-weight:700;color:var(--orange);
+    font-variant-numeric:tabular-nums;line-height:1;}
+  .col small{color:var(--muted);}
+  hr{border:none;border-top:2px dotted var(--line);margin:2.4em 0;}
+  footer{color:var(--muted);font-size:.85rem;text-align:center;margin-top:3em;
+    font-family:ui-monospace,Menlo,monospace;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img src="assets/banner-sketch.png" alt="mbolt — profile-guided layout for LLM weights">
+</header>
+
+<div class="wrap">
+
+  <p class="kicker">Profile-guided optimization · MoE inference · storage</p>
+  <h1>Same quality when warm, 2.1× faster when cold</h1>
+  <p class="lede">mbolt reorders the expert weights inside a Mixture-of-Experts GGUF so the
+  bytes a real workload reads together sit together on disk. Here is what 500 prompts say about it.</p>
+  <p class="byline">Qwen3-30B-A3B-UD-IQ3_XXS · M-series MacBook Pro (64 GB) · Metal · temp 0, deterministic</p>
+
+  <div class="pull">
+    <strong>The one-line result:</strong> in the warm GPU regime the layout changes
+    <em class="o">nothing</em> you can measure — same throughput, same memory, same answers.
+    Under cold streaming, the same file decodes <strong>2.10× faster</strong> because it issues
+    <em class="o">4.2× fewer reads</em> per token.
+  </div>
+
+  <h2><span class="n">§1</span> Why a disk layout matters at all</h2>
+  <p>A Mixture-of-Experts model only touches a handful of its experts per token — but which
+  ones depends on the input, and they are scattered across the file. On this 30B model the
+  expert slices are <strong>92% of the file bytes</strong>. When the model does not fit in
+  memory and streams from disk, decoding one token means thousands of tiny scattered reads.</p>
+  <p>mbolt is <strong>BOLT/PGO for model binaries</strong>: trace which experts a real workload
+  activates <em>together</em>, then rewrite the GGUF so those slices are physically adjacent.
+  A streaming engine then reads a few big sequential chunks instead of thousands of random
+  page faults. Weights stay bit-exact (+0.003% size); only the byte order changes.</p>
+
+  <h2><span class="n">§2</span> The setup: 500 prompts, with vs without</h2>
+  <p>500 prompts (Dolly + CodeAlpaca), run through both the stock file (<em>without</em>) and the
+  mbolt-reordered file (<em>with</em>), via <code>llama-server</code> so each model loads once.
+  Deterministic: <code>temp 0</code>, <code>seed 0</code>, thinking disabled, 200-token cap.
+  Six things measured: latency, throughput, memory, GPU, CPU, and accuracy.</p>
+
+  <h2><span class="n">§3</span> Warm GPU: throughput is at parity</h2>
+  <p>With the whole 12.9 GB model resident on the GPU, disk byte-order is irrelevant — mmap
+  faults are layout-blind. Across 500 prompts the two files are indistinguishable:</p>
+  <figure>
+    <img src="assets/02_mbolt_warm_gpu_throughput_parity.png"
+         alt="Warm GPU throughput parity: orig 71.6 vs mbolt 71.9 median tok/s over 500 prompts">
+    <figcaption>Median 71.6 vs 71.9 tok/s. Two-thirds of outputs come out byte-identical.</figcaption>
+  </figure>
+
+  <h2><span class="n">§4</span> Memory, GPU, CPU: all parity</h2>
+  <p>A smaller instrumented pass (<code>/usr/bin/time -l</code> for RSS and CPU, <code>ioreg</code>
+  for GPU utilization — no sudo needed) confirms nothing moves in the warm regime:</p>
+  <figure>
+    <img src="assets/03_mbolt_instrumented_runtime_metrics.png"
+         alt="Instrumented runtime metrics: peak RSS, GPU memory, GPU util, CPU cores, latency — all parity">
+    <figcaption>Peak RSS, GPU-resident memory, GPU utilization, CPU load, per-token latency — all effectively equal.</figcaption>
+  </figure>
+
+  <h2><span class="n">§5</span> Accuracy: divergence is structured, but there is no regression</h2>
+  <p>Reordering experts permutes the softmax reduction order by ~1 ulp, and over 48 layers that
+  can flip a token. So 34% of outputs eventually diverge — but that number is the <em>headline</em>,
+  not the story. A pairwise Claude judge on 120 diverged pairs splits <strong>48 mbolt / 46 orig /
+  26 tie</strong>: a coin-flip.</p>
+  <figure>
+    <img src="assets/05_mbolt_output_divergence_quality_analysis.png"
+         alt="Output divergence analysis: 66% byte-identical, diverged pairs judged 48 mbolt / 46 orig / 26 tie, no regression">
+    <figcaption>Diverged pairs share a long common prefix (first difference at char 267 of 746); 69% both hit the token cap. Short completed answers diverge only 10%. Measured KLD 0.00096 — 5× below the engine's own CPU↔Metal backend delta.</figcaption>
+  </figure>
+  <div class="cols">
+    <div class="col"><h4>Byte-identical</h4><div class="big">66%</div><small>329 / 500 outputs</small></div>
+    <div class="col"><h4>Diverged, judged</h4><div class="big">48–46</div><small>mbolt–orig, a coin-flip</small></div>
+    <div class="col"><h4>Output noise</h4><div class="big">5×</div><small>below a backend switch</small></div>
+  </div>
+
+  <h2><span class="n">§6</span> Cold replay: the layout-sensitive regime</h2>
+  <p>Now the point. Replay the exact per-token byte-range reads a streaming engine would issue —
+  cache flushed, every read a miss (<code>hit 0.00</code>) — against the real file, on
+  <strong>held-out</strong> trace tokens (clustered on the first 80%, replayed on the last 20%).
+  Here byte order is everything:</p>
+  <figure>
+    <img src="assets/04_mbolt_cold_replay_layout_benchmark.png"
+         alt="Cold physical replay: baseline 1089 reads/token vs interleave 258, 2.10x faster cold decode">
+    <figcaption>Bytes/token stay constant (~750 MB). The win is purely fewer, larger sequential reads: 1089 → 258 reads/token.</figcaption>
+  </figure>
+  <div class="pull">
+    <strong>1089 → 258 reads/token</strong> (4.2× fewer) → <strong>2.10× faster cold decode.</strong>
+    The <code>chain</code> layout — which loads in stock llama.cpp today — already gets 1.20×.
+  </div>
+
+  <h2><span class="n">§7</span> Why warm hides the win and cold reveals it</h2>
+  <p>Same model, two regimes. When resident, the GPU never touches the disk order. When streaming
+  under memory pressure, the disk order <em>is</em> the bottleneck — and prior end-to-end engine
+  runs (80B, CPU experts, with the <code>MBOLT_PREFETCH</code> reader) turn the I/O floor into
+  real speed: <strong>1.55×</strong> decode with interleave+prefetch, 1.31× from the prefetcher alone.</p>
+  <figure>
+    <img src="assets/06_mbolt_streaming_mechanism_warm_vs_cold.png"
+         alt="Mechanism: warm GPU is layout-blind and at parity; cold streaming turns scattered reads into sequential ones for 2.10x">
+    <figcaption>mbolt is a storage-streaming optimization: invisible when warm, valuable when cold.</figcaption>
+  </figure>
+
+  <hr>
+
+  <div class="tldr">
+    <h3>TL;DR</h3>
+    <ul>
+      <li><strong>Warm / resident GPU:</strong> parity on throughput (71.6 vs 71.9 tok/s over 500 prompts), memory, GPU, CPU, and latency. mbolt costs nothing.</li>
+      <li><strong>Accuracy:</strong> 66% of outputs byte-identical; diverged outputs judged 48–46 — no systematic quality difference. Divergence is FP-level, 5× below a GPU-backend switch.</li>
+      <li><strong>Cold / streaming:</strong> 4.2× fewer reads/token → <em class="o">2.10×</em> faster cold decode on the real file; 1.55× end-to-end with the prefetcher.</li>
+      <li><strong>The honest catch:</strong> a resident model can't see this. The layout is a difference in kind on slower drives, thread-starved boxes, or any engine that streams synchronously.</li>
+    </ul>
+  </div>
+
+  <figure>
+    <img src="assets/01_mbolt_benchmark_summary_warm_vs_cold.png"
+         alt="Full benchmark summary: warm GPU parity on the left, cold physical replay 2.10x on the right">
+    <figcaption>The whole picture on one card.</figcaption>
+  </figure>
+
+  <footer>
+    mbolt · profile-guided GGUF layout optimizer · all numbers deterministic, held-out where noted
+  </footer>
+
+</div>
+</body>
+</html>

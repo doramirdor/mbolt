@@ -1,0 +1,50 @@
+[orig] starting server (resume from 0)
+[orig] 0/500 84.5 tok/s
+[orig] 25/500 78.3 tok/s
+[orig] 50/500 73.3 tok/s
+[orig] 75/500 76.8 tok/s
+[orig] 100/500 70.9 tok/s
+[orig] 125/500 74.5 tok/s
+[orig] 150/500 73.3 tok/s
+[orig] 175/500 69.9 tok/s
+[orig] 200/500 62.9 tok/s
+[orig] 225/500 70.3 tok/s
+[orig] 250/500 71.7 tok/s
+[orig] 275/500 72.6 tok/s
+[orig] 300/500 70.4 tok/s
+[orig] 325/500 71.7 tok/s
+[orig] 350/500 70.7 tok/s
+[orig] 375/500 69.9 tok/s
+[orig] 400/500 71.2 tok/s
+[orig] 425/500 70.0 tok/s
+[orig] 450/500 71.7 tok/s
+[orig] 475/500 73.1 tok/s
+[orig] done
+[mbolt] starting server (resume from 0)
+[mbolt] 0/500 77.2 tok/s
+[mbolt] 25/500 65.0 tok/s
+[mbolt] 50/500 68.7 tok/s
+[mbolt] 75/500 70.8 tok/s
+[mbolt] 100/500 69.6 tok/s
+[mbolt] 125/500 68.2 tok/s
+[mbolt] 150/500 70.0 tok/s
+[mbolt] 175/500 67.6 tok/s
+[mbolt] 200/500 68.3 tok/s
+[mbolt] 225/500 71.6 tok/s
+[mbolt] 250/500 68.5 tok/s
+[mbolt] 275/500 70.0 tok/s
+[mbolt] 300/500 71.4 tok/s
+[mbolt] 325/500 71.1 tok/s
+[mbolt] 350/500 80.1 tok/s
+[mbolt] 375/500 76.9 tok/s
+[mbolt] 400/500 80.7 tok/s
+[mbolt] 425/500 82.5 tok/s
+[mbolt] 450/500 80.7 tok/s
+[mbolt] 475/500 85.9 tok/s
+[mbolt] done
+
+=== 500-prompt summary ===
+orig: n=500 gen tok/s median 71.6 mean 72.2 p10 68.8
+mbolt: n=500 gen tok/s median 71.9 mean 73.7 p10 67.8
+divergence: 171/500 = 34.2% outputs differ (byte-level)
+wrote diverged indices (171) for judge

@@ -1,0 +1,33 @@
+[orig] reason ...
+  gen 73.9 t/s | prompt 179 t/s | wall 5.6s | RSS 13.2GB | GPU 49.5%/81%max | GPUmem 1.09GB | CPU 2.2s
+[mbolt] reason ...
+  gen 83.9 t/s | prompt 492 t/s | wall 7.7s | RSS 10.27GB | GPU 85.6%/92%max | GPUmem 14.47GB | CPU 3.1s
+[orig] code ...
+  gen 75.8 t/s | prompt 248 t/s | wall 7.2s | RSS 11.26GB | GPU 80.5%/81%max | GPUmem 14.14GB | CPU 2.9s
+[mbolt] code ...
+  gen 81.8 t/s | prompt 252 t/s | wall 6.4s | RSS 12.66GB | GPU 77.6%/88%max | GPUmem 14.5GB | CPU 2.6s
+[orig] summarize ...
+  gen 79.6 t/s | prompt 435 t/s | wall 6.5s | RSS 13.12GB | GPU 86.3%/90%max | GPUmem 14.41GB | CPU 2.8s
+[mbolt] summarize ...
+  gen 78.1 t/s | prompt 437 t/s | wall 6.3s | RSS 13.07GB | GPU 69.5%/88%max | GPUmem 14.11GB | CPU 2.7s
+[orig] factual ...
+  gen 88.1 t/s | prompt 250 t/s | wall 5.5s | RSS 13.08GB | GPU 80.4%/93%max | GPUmem 14.65GB | CPU 1.9s
+[mbolt] factual ...
+  gen 88.7 t/s | prompt 247 t/s | wall 5.2s | RSS 12.28GB | GPU 72.5%/97%max | GPUmem 14.52GB | CPU 1.9s
+[orig] logic ...
+  gen 78.4 t/s | prompt 185 t/s | wall 6.4s | RSS 12.74GB | GPU 54.0%/78%max | GPUmem 14.52GB | CPU 2.3s
+[mbolt] logic ...
+  gen 66.2 t/s | prompt 450 t/s | wall 9.0s | RSS 12.43GB | GPU 62.0%/79%max | GPUmem 14.64GB | CPU 2.8s
+
+wrote /Users/dor/Documents/code/GPUopt/results/goal/metrics_ngl99.json
+
+=== AGGREGATE (median across prompts) ===
+metric                        orig       mbolt     delta
+gen tok/s                    78.40       81.80     +4.3%
+prompt tok/s                247.60      437.30    +76.6%
+wall s                        6.39        6.40     +0.2%
+peak RSS GB                  13.08       12.43     -5.0%
+GPU util %                   80.40       72.50     -9.8%
+GPU mem GB                   14.41       14.50     +0.6%
+orig avg CPU cores busy: 0.37
+mbolt avg CPU cores busy: 0.42

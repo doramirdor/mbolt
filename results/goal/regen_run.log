@@ -1,0 +1,18 @@
+orig   reason     len=699
+mbolt  reason     len=699
+orig   code       len=1271
+mbolt  code       len=1271
+orig   summarize  len=1737
+mbolt  summarize  len=1745
+orig   factual    len=1903
+mbolt  factual    len=1924
+orig   logic      len=1448
+mbolt  logic      len=1455
+
+identical:
+  reason     identical=True
+  code       identical=True
+  summarize  identical=False
+  factual    identical=False
+  logic      identical=False
+wrote /Users/dor/Documents/code/GPUopt/results/goal/metrics_nothink.json

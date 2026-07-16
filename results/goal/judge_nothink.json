@@ -1,0 +1,64 @@
+{
+  "tally": {
+    "orig": 2,
+    "mbolt": 1,
+    "tie": 2
+  },
+  "results": [
+    {
+      "prompt_id": "reason",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Identical answers, both correct with valid reasoning and verification"
+      },
+      "winner_model": "tie",
+      "identical": true
+    },
+    {
+      "prompt_id": "code",
+      "A": "mbolt",
+      "B": "orig",
+      "verdict": {
+        "winner": "TIE",
+        "reason": "Answers identical in code, explanation, and complexity analysis"
+      },
+      "winner_model": "tie",
+      "identical": true
+    },
+    {
+      "prompt_id": "summarize",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "B",
+        "reason": "B correctly names LSM compaction write amplification; A wrongly claims lower."
+      },
+      "winner_model": "mbolt",
+      "identical": false
+    },
+    {
+      "prompt_id": "factual",
+      "A": "mbolt",
+      "B": "orig",
+      "verdict": {
+        "winner": "B",
+        "reason": "B uses correct CP example; ZooKeeper/DynamoAP framing weaker, incomplete."
+      },
+      "winner_model": "orig",
+      "identical": false
+    },
+    {
+      "prompt_id": "logic",
+      "A": "orig",
+      "B": "mbolt",
+      "verdict": {
+        "winner": "A",
+        "reason": "A finishes explanation; B truncates mid-sentence."
+      },
+      "winner_model": "orig",
+      "identical": false
+    }
+  ]
+}

@@ -53,7 +53,7 @@ GGUF metadata) — any engine can consume it without re-profiling.
 | ✅ | 4-gate correctness CI (byte-verify · identity proof · routing equivalence · KLD envelope) | `scripts/ci_correctness.sh` |
 | ✅ | Cross-domain generalization measured | dolly-trained layout → 1.22× on pure code |
 | 🚧 | Safetensors/MLX port | roadmap |
-| 🚧 | Upstream llama.cpp PR | staged: `doramirdor/llama.cpp:mbolt-prefetch` |
+| 🚧 | Upstream llama.cpp PR | prefetch-only branch staged: `doramirdor/llama.cpp:mbolt-prefetch-only` |
 
 ## The numbers
 

@@ -8,3 +8,5 @@ mbolt/.venv/
 __pycache__/
 *.egg-info/
 .openbar/
+.DS_Store
+_to_delete/
