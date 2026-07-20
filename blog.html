@@ -157,6 +157,35 @@
     <figcaption>mbolt is a storage-streaming optimization: invisible when warm, valuable when cold.</figcaption>
   </figure>
 
+  <h2><span class="n">§8</span> Postscript: what independent engines measured (added 2026-07-20)</h2>
+  <p>After this went up, the author of an MLX expert-offload streamer — an LRU-caching,
+  explicit-read engine, the exact consumer §7 asks for — measured these levers <em>on his own
+  engine</em> in <a href="https://github.com/ml-explore/mlx-lm/issues/1438">mlx-lm#1438</a>,
+  adversarially and in public. Three results:</p>
+  <p><strong>On a fine-grained model it holds.</strong> Qwen3.6-35B-A3B-8bit (~1&nbsp;MB expert
+  slices): coalescing each expert's nine scattered sub-slices into one contiguous block —
+  profile-free, no clustering — measured <strong>2.34× per-cold-expert I/O</strong>, which is
+  <em class="o">+17.6%</em> decode at 0.3 resident and <em class="o">+14.3%</em> at his
+  production sizing. The profile-guided reorder added only ~12% of read-ops on top: against an
+  LRU, the deterministic coalesce carries the win.</p>
+  <p><strong>On a big-expert model it doesn't, and I said so in advance.</strong> I pre-registered
+  a bar: under +15% on the bigger-model test means "nice, not necessary." gpt-oss-120b
+  (~4&nbsp;MB slices) came back at 1.29× I/O = <em class="o">+9.7%</em> — misses there are
+  bandwidth-bound, and there is no per-read latency left for the layout to reclaim.</p>
+  <div class="pull">
+    <strong>The slice-size law</strong> (fits every measured point):
+    gain ≈ 1 + saved_ops · t<sub>op</sub> / (slice_bytes / bandwidth), with t<sub>op</sub> ≈ 100&nbsp;µs
+    and ~6&nbsp;GB/s SSD. Coalescing reclaims <em>per-read latency</em>, so it pays iff misses are
+    latency-bound: <strong>fine-grained MoEs and low-bit quants (~≤1&nbsp;MB slices)</strong>.
+    The ~600&nbsp;KB IQ3 slices in this post are the favorable end of that law — this study
+    wasn't lucky, it was in-domain. Model scale doesn't rescue the other end: what shrinks the
+    viable cache fraction is what fattens the slices.
+  </div>
+  <p>The same thread killed two ideas properly (cross-layer prefetch: three independent nulls;
+  pinned resident sets: plain LRU wins even in-session) and produced the safetensors/MLX
+  pipeline + bit-exact coalesce rewriter, public here:
+  <a href="https://gist.github.com/doramirdor/0aeb975a99eb5a4644a3d105b57e3909">gist</a>.</p>
+
   <hr>
 
   <div class="tldr">
@@ -166,6 +195,7 @@
       <li><strong>Accuracy:</strong> 66% of outputs byte-identical; diverged outputs judged 48–46 — no systematic quality difference. Divergence is FP-level, 5× below a GPU-backend switch.</li>
       <li><strong>Cold / streaming:</strong> 4.2× fewer reads/token → <em class="o">2.10×</em> faster cold decode on the real file; 1.55× end-to-end with the prefetcher.</li>
       <li><strong>The honest catch:</strong> a resident model can't see this. The layout is a difference in kind on slower drives, thread-starved boxes, or any engine that streams synchronously.</li>
+      <li><strong>Independently cross-checked (2026-07-20):</strong> an MLX offload author measured it on his own LRU engine — <em class="o">+14–18%</em> decode on ~1 MB expert slices, but only +9.7% on 4 MB bandwidth-bound slices. Layout reclaims read <em>latency</em>: it wants fine-grained, low-bit MoEs (§8).</li>
     </ul>
   </div>
 

@@ -52,7 +52,7 @@ GGUF metadata) — any engine can consume it without re-profiling.
 | ✅ | Explicit-read prefetcher (llama.cpp patch, `MBOLT_PREFETCH`) | +31–52% alone on **any** GGUF, parallel reads |
 | ✅ | 4-gate correctness CI (byte-verify · identity proof · routing equivalence · KLD envelope) | `scripts/ci_correctness.sh` |
 | ✅ | Cross-domain generalization measured | dolly-trained layout → 1.22× on pure code |
-| 🚧 | Safetensors/MLX port | roadmap |
+| ✅ | Safetensors/MLX map + coalesce rewriter (side-file + manifest, bit-exact, source-stamped) | [pipeline gist](https://gist.github.com/doramirdor/0aeb975a99eb5a4644a3d105b57e3909); cross-checked by independent MLX implementers — see below |
 | 🚧 | Upstream llama.cpp PR | prefetch-only branch staged: `doramirdor/llama.cpp:mbolt-prefetch-only` |
 
 ## The numbers
@@ -83,6 +83,32 @@ permutation (and how we proved the rewrite isn't the cause): [results/phase1-rep
 
 Generalization: layouts trained on general instructions still deliver **1.22×** on a
 pure-code workload (in-domain 1.46×, mixed 1.61×) — profiles transfer; matched tracing buys the rest.
+
+## Independently measured (MLX cross-check, 2026-07)
+
+The author of an MLX expert-offload streamer (LRU-caching, explicit byte-range reads)
+measured mbolt's layout levers **on his own engine** in
+[ml-explore/mlx-lm#1438](https://github.com/ml-explore/mlx-lm/issues/1438) — an adversarial,
+public cross-check. What survived, and the law that scopes it:
+
+| model (slice size) | coalesce I/O gain | decode end-to-end |
+|---|---|---|
+| Qwen3.6-35B-A3B-8bit (~1 MB slices) | 2.34× | **+17.6%** @0.3 resident / **+14.3%** @0.45 |
+| gpt-oss-120b-MXFP4 (~4 MB slices) | 1.29× | +9.7% — **bandwidth-bound, below my own pre-registered bar** |
+
+- **The slice-size law** (fits all measured points): `gain ≈ 1 + saved_ops · t_op / (slice_bytes / BW)`
+  with t_op ≈ 100 µs, BW ≈ 6 GB/s. Coalescing reclaims *per-read latency*, so **it pays iff
+  misses are latency-bound: fine-grained MoEs and low-bit quants (~≤1 MB expert slices)** —
+  which is exactly where this repo's GGUF numbers live (IQ3_XXS slices ≈ 600 KB). Model scale
+  does *not* rescue it: what shrinks the viable cache fraction also fattens the slices.
+- **Profile-free coalescing carries ~90% of the win** (each expert's scattered sub-slices → one
+  contiguous block, no trace needed). The profile-guided clique reorder adds ~12% of read-ops at
+  decode (it generalizes across topics, and matters more for cold prefill).
+- Also settled in that thread, three ways over: cross-layer prefetch is a null; plain LRU beats
+  any pinned resident set. Neither is worth building.
+
+Safetensors pipeline, coalesce rewriter (bit-exact, source-stamped side-file + manifest), and
+the raw results: [gist](https://gist.github.com/doramirdor/0aeb975a99eb5a4644a3d105b57e3909).
 
 ## Quickstart
 
@@ -117,6 +143,11 @@ mbolt-sim gate model.gguf route.bin perms.json -o gate.json
 - The layout only pays with **explicit reads** — stock llama.cpp's mmap fault path is
   layout-blind (measured: parity). Use the bundled prefetcher, or an explicit-read
   engine ([colibri](https://github.com/JustVugg/colibri)-class).
+- Gains scale with how **latency-bound** your misses are (the slice-size law above):
+  ~≤1 MB expert slices (fine-grained MoEs, low-bit quants) are the win regime; ~4 MB
+  big-expert slices (gpt-oss/GLM-class mxfp4) are bandwidth-bound and get ~+10%, not 1.5×.
+- If your engine already **LRU-caches experts**, expect +14–18% decode (measured
+  independently, table above), not the no-retention streaming numbers.
 - Trace on prompts resembling your deployment mix; profiles transfer across domains
   (measured above) but matched tracing is worth ~20–30%.
 
