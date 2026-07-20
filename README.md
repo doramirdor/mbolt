@@ -95,12 +95,22 @@ public cross-check. What survived, and the law that scopes it:
 |---|---|---|
 | Qwen3.6-35B-A3B-8bit (~1 MB slices) | 2.34× | **+17.6%** @0.3 resident / **+14.3%** @0.45 |
 | gpt-oss-120b-MXFP4 (~4 MB slices) | 1.29× | +9.7% — **bandwidth-bound, below my own pre-registered bar** |
+| Qwen3-235B-A22B-4bit (~3.5 MB slices, **deep offload**: table = 2.6× RAM, 0.2 resident) | 1.34× (A1) | **+32.3% decode, −26.3% TTFT — in-engine**, written 119 GB side-file, second independent implementer, text identical |
 
-- **The slice-size law** (fits all measured points): `gain ≈ 1 + saved_ops · t_op / (slice_bytes / BW)`
-  with t_op ≈ 100 µs, BW ≈ 6 GB/s. Coalescing reclaims *per-read latency*, so **it pays iff
-  misses are latency-bound: fine-grained MoEs and low-bit quants (~≤1 MB expert slices)** —
-  which is exactly where this repo's GGUF numbers live (IQ3_XXS slices ≈ 600 KB). Model scale
-  does *not* rescue it: what shrinks the viable cache fraction also fattens the slices.
+The third row is the one that closes the loop: `coalesce_rewrite.py` ran unmodified on a
+119 GB model, bit-exact, wired into a real engine — the first non-proxy measurement, and
+the largest gain, *despite* the weakest per-read lever. Which is the point:
+
+- **Two independent terms decide the payoff**: `speedup = 1 / ((1−s) + s/g)` — s = cold-read
+  share of the decode token, g = per-cold-expert I/O gain.
+  - **g falls with slice size** (the slice-size law, fits all measured points):
+    `g ≈ 1 + saved_ops · t_op / (slice_bytes / BW)`, t_op ≈ 100 µs, BW ≈ 6 GB/s. Coalescing
+    reclaims *per-read latency*: ~1 MB slices pay (fine-grained MoEs, low-bit quants — exactly
+    where this repo's GGUF numbers live, IQ3_XXS ≈ 600 KB), ~4 MB bandwidth-bound slices don't.
+  - **s rises toward 1 as the resident fraction falls** — at deep offload (table ≳ 2.5× RAM),
+    cold reads *are* the token (s ≈ 0.96 measured-by-inference at 0.2 resident), so even a
+    modest g pays +32%. The share moves faster with fraction than interpolation suggests;
+    measure it per-config.
 - **Profile-free coalescing carries ~90% of the win** (each expert's scattered sub-slices → one
   contiguous block, no trace needed). The profile-guided clique reorder adds ~12% of read-ops at
   decode (it generalizes across topics, and matters more for cold prefill).
@@ -143,11 +153,12 @@ mbolt-sim gate model.gguf route.bin perms.json -o gate.json
 - The layout only pays with **explicit reads** — stock llama.cpp's mmap fault path is
   layout-blind (measured: parity). Use the bundled prefetcher, or an explicit-read
   engine ([colibri](https://github.com/JustVugg/colibri)-class).
-- Gains scale with how **latency-bound** your misses are (the slice-size law above):
-  ~≤1 MB expert slices (fine-grained MoEs, low-bit quants) are the win regime; ~4 MB
-  big-expert slices (gpt-oss/GLM-class mxfp4) are bandwidth-bound and get ~+10%, not 1.5×.
-- If your engine already **LRU-caches experts**, expect +14–18% decode (measured
-  independently, table above), not the no-retention streaming numbers.
+- Gains follow the **two-term decomposition** above: per-read gain g wants ~≤1 MB slices
+  (fine-grained MoEs, low-bit quants); big-expert ~4 MB slices cap g at ~1.3. But the share
+  s can carry it anyway: at **deep offload** (table ≳ 2.5× RAM) even modest g measured
+  **+32% decode / −26% TTFT in-engine**. Moderate ratios with big slices are the weak spot (~+10%).
+- If your engine already **LRU-caches experts** at ratios near 1, expect +14–18% decode
+  (measured independently, table above), not the no-retention streaming numbers.
 - Trace on prompts resembling your deployment mix; profiles transfer across domains
   (measured above) but matched tracing is worth ~20–30%.
 

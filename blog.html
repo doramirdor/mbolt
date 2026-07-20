@@ -172,6 +172,15 @@
   a bar: under +15% on the bigger-model test means "nice, not necessary." gpt-oss-120b
   (~4&nbsp;MB slices) came back at 1.29× I/O = <em class="o">+9.7%</em> — misses there are
   bandwidth-bound, and there is no per-read latency left for the layout to reclaim.</p>
+  <p><strong>Then a third implementer ran it in-engine at real scale, and both results snapped
+  into one law.</strong> The coalesce rewriter ran unmodified on Qwen3-235B (a written
+  119&nbsp;GB side-file, bit-exact), wired into an independent engine's fetch path, at 0.2
+  resident on a table 2.6× RAM: <em class="o">+32.3% decode, −26.3% time-to-first-token</em>,
+  reads per token exactly 3× down, output text identical. Not because the per-read lever got
+  stronger — it's <em>weaker</em> there (1.34×), as the slice-size law says — but because at deep
+  offload the cold-read share of the token approaches 1. The full decomposition:
+  speedup&nbsp;=&nbsp;1&nbsp;/&nbsp;((1−s)&nbsp;+&nbsp;s/g). The null and the win are the same
+  law at different corners.</p>
   <div class="pull">
     <strong>The slice-size law</strong> (fits every measured point):
     gain ≈ 1 + saved_ops · t<sub>op</sub> / (slice_bytes / bandwidth), with t<sub>op</sub> ≈ 100&nbsp;µs
@@ -195,7 +204,7 @@
       <li><strong>Accuracy:</strong> 66% of outputs byte-identical; diverged outputs judged 48–46 — no systematic quality difference. Divergence is FP-level, 5× below a GPU-backend switch.</li>
       <li><strong>Cold / streaming:</strong> 4.2× fewer reads/token → <em class="o">2.10×</em> faster cold decode on the real file; 1.55× end-to-end with the prefetcher.</li>
       <li><strong>The honest catch:</strong> a resident model can't see this. The layout is a difference in kind on slower drives, thread-starved boxes, or any engine that streams synchronously.</li>
-      <li><strong>Independently cross-checked (2026-07-20):</strong> an MLX offload author measured it on his own LRU engine — <em class="o">+14–18%</em> decode on ~1 MB expert slices, but only +9.7% on 4 MB bandwidth-bound slices. Layout reclaims read <em>latency</em>: it wants fine-grained, low-bit MoEs (§8).</li>
+      <li><strong>Independently cross-checked (2026-07-20):</strong> two MLX offload implementers measured it on their own engines — <em class="o">+14–18%</em> decode on ~1 MB slices at moderate offload, +9.7% on 4 MB bandwidth-bound slices, and <em class="o">+32.3% decode / −26.3% TTFT in-engine</em> at deep offload (119 GB model, 2.6× RAM), where the cold-read share dominates. speedup = 1/((1−s)+s/g) — see §8.</li>
     </ul>
   </div>
 
