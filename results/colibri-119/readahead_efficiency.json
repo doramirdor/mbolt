@@ -1,0 +1,172 @@
+[
+ {
+  "model": "qwen3-30b-a3b",
+  "quant": "IQ3_XXS",
+  "n_layers": 48,
+  "n_expert_per_layer": 128,
+  "k": 8,
+  "expert_bytes_kib": 1764.0,
+  "eval_tokens": 2000,
+  "eval_window": "held-out tail (last 20% of decode trace; layouts trained on first 80%)",
+  "accounting": "cold per-token: every demanded slice fetched fresh each token, no cross-token retention; readahead = W-aligned windows covering each demanded range, unioned per token; useful = exact demanded slice bytes",
+  "rows": [
+   {
+    "layout": "stock",
+    "readahead_kib": 16,
+    "reads_per_token": 1087.9,
+    "fetched_mb_per_token": 760.4,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 97.7,
+    "bytes_per_useful_expert_kib": 1933.9
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 128,
+    "reads_per_token": 1087.9,
+    "fetched_mb_per_token": 884.8,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 83.9,
+    "bytes_per_useful_expert_kib": 2250.2
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 512,
+    "reads_per_token": 1041.3,
+    "fetched_mb_per_token": 1315.2,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 56.5,
+    "bytes_per_useful_expert_kib": 3344.8
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 2048,
+    "reads_per_token": 848.9,
+    "fetched_mb_per_token": 2874.8,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 25.8,
+    "bytes_per_useful_expert_kib": 7311.0
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 16,
+    "reads_per_token": 258.3,
+    "fetched_mb_per_token": 745.5,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 99.6,
+    "bytes_per_useful_expert_kib": 1896.0
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 128,
+    "reads_per_token": 258.3,
+    "fetched_mb_per_token": 774.2,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 95.9,
+    "bytes_per_useful_expert_kib": 1968.9
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 512,
+    "reads_per_token": 258.3,
+    "fetched_mb_per_token": 873.1,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 85.1,
+    "bytes_per_useful_expert_kib": 2220.4
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 2048,
+    "reads_per_token": 225.8,
+    "fetched_mb_per_token": 1275.0,
+    "useful_mb_per_token": 742.7,
+    "efficiency_pct": 58.2,
+    "bytes_per_useful_expert_kib": 3242.5
+   }
+  ]
+ },
+ {
+  "model": "qwen3-next-80b-a3b",
+  "quant": "IQ3_XXS",
+  "n_layers": 48,
+  "n_expert_per_layer": 512,
+  "k": 10,
+  "expert_bytes_kib": 1176.0,
+  "eval_tokens": 2000,
+  "eval_window": "held-out tail (last 20% of decode trace; layouts trained on first 80%)",
+  "accounting": "cold per-token: every demanded slice fetched fresh each token, no cross-token retention; readahead = W-aligned windows covering each demanded range, unioned per token; useful = exact demanded slice bytes",
+  "rows": [
+   {
+    "layout": "stock",
+    "readahead_kib": 16,
+    "reads_per_token": 1415.1,
+    "fetched_mb_per_token": 640.2,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 96.4,
+    "bytes_per_useful_expert_kib": 1302.4
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 128,
+    "reads_per_token": 1415.1,
+    "fetched_mb_per_token": 802.1,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 76.9,
+    "bytes_per_useful_expert_kib": 1631.9
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 512,
+    "reads_per_token": 1381.7,
+    "fetched_mb_per_token": 1357.0,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 45.5,
+    "bytes_per_useful_expert_kib": 2760.9
+   },
+   {
+    "layout": "stock",
+    "readahead_kib": 2048,
+    "reads_per_token": 1251.4,
+    "fetched_mb_per_token": 3491.8,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 17.7,
+    "bytes_per_useful_expert_kib": 7104.1
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 16,
+    "reads_per_token": 374.4,
+    "fetched_mb_per_token": 619.2,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 99.6,
+    "bytes_per_useful_expert_kib": 1259.7
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 128,
+    "reads_per_token": 374.4,
+    "fetched_mb_per_token": 662.2,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 93.2,
+    "bytes_per_useful_expert_kib": 1347.2
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 512,
+    "reads_per_token": 374.4,
+    "fetched_mb_per_token": 808.1,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 76.3,
+    "bytes_per_useful_expert_kib": 1644.0
+   },
+   {
+    "layout": "interleave+chain",
+    "readahead_kib": 2048,
+    "reads_per_token": 333.1,
+    "fetched_mb_per_token": 1371.1,
+    "useful_mb_per_token": 616.9,
+    "efficiency_pct": 45.0,
+    "bytes_per_useful_expert_kib": 2789.5
+   }
+  ]
+ }
+]
